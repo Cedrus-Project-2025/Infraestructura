@@ -1,2 +1,2 @@
 # Equipo-Infraestructura
-Esther Apaza
+Esther Apaza, Valeria Paredes
