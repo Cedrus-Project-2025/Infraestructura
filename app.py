@@ -1,28 +1,26 @@
+import os, sys
+from dotenv import load_dotenv
 from flask import Flask, request
-from flask_restful import Resource, Api
-from flask_sqlalchemy import SQLAlchemy
+from flask_restful import Api
+from flask_cors import CORS
 
-# Mando a llamar mis archivos {carpeta}.{archivo}
-from General.autores import Autor, AutorResource, AutorListResource
+from Endpoints.General.autores import AutorResource
+from Endpoints.General.rclone import validar_rclone
+from Endpoints.DataBase.manager import DatabaseManager
 
+# ===== Validaciones iniciales
+load_dotenv()
+sys.stdout = sys.stderr
+validar_rclone()
+
+# ===== Configuracion API
 app = Flask(__name__)
+CORS(app)
 api = Api(app)
 
-# # Configuración de la base de datos PostgreSQL
-# app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:1111@localhost/autores_db"
-# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# db = SQLAlchemy(app)
-
-
-# # Crear la base de datos y la tabla si no existen
-# with app.app_context():
-#     db.create_all()
-
-
-# Agregar recursos a la API
-api.add_resource(AutorListResource, "/autores")
-api.add_resource(AutorResource, "/autor/<int:autor_id>")
+# ===== Endpoints
+api.add_resource(AutorResource, "/api/autor")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=10000)
