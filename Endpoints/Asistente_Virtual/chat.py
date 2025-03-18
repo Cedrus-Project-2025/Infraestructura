@@ -33,3 +33,11 @@ class Chatbot_Response(Resource):
 
         except Exception as ex: return {"status":"failed!","reason":f"{ex}"}, 500
 
+    def get(self):
+        ''' '''
+        
+    def patch(self):
+        ''' '''
+    
+    def delete(self):
+        ''' '''
