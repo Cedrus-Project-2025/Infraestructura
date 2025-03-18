@@ -10,11 +10,12 @@ class DatabaseManager:
         """
 
         self.location_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        self.drive_remote = os.getenv("RCLONE_name", "drive:")
+        self.drive_remote = os.getenv("RCLONE_name")
         self.db_filename = "database.db"
         self.db_path = os.path.join(
             self.location_path,
-            '__pycache__',
+            'Files',
+            'Temp',
             self.db_filename
         )
 
@@ -59,29 +60,27 @@ class DatabaseManager:
         Crea las tablas necesarias si no existen en la base de datos.
         """
         queries = [
-            """CREATE TABLE IF NOT EXISTS rain (
+            """CREATE TABLE IF NOT EXISTS usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                rain_detected BOOLEAN NOT NULL,
-                intensity REAL NOT NULL,
-                timestamp TEXT NOT NULL
-            )""",
-            """CREATE TABLE IF NOT EXISTS temperature (
+                nombre TEXT NOT NULL,
+                correo TEXT UNIQUE NOT NULL,
+                contraseña TEXT NOT NULL,
+                fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );""",
+            """CREATE TABLE IF NOT EXISTS chatbot_interacciones (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                temperature REAL NOT NULL,
-                humidity REAL NOT NULL,
-                timestamp TEXT NOT NULL
-            )""",
-            """CREATE TABLE IF NOT EXISTS motion (
+                usuario_id INTEGER,
+                pregunta TEXT NOT NULL,
+                respuesta TEXT NOT NULL,
+                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+            );""",
+            """CREATE TABLE IF NOT EXISTS configuraciones (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                motion_detected BOOLEAN NOT NULL,
-                timestamp TEXT NOT NULL
-            )""",
-            """CREATE TABLE IF NOT EXISTS pressure (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                pressure REAL NOT NULL,
-                altitude REAL NOT NULL,
-                timestamp TEXT NOT NULL
-            )"""
+                clave TEXT UNIQUE NOT NULL,
+                valor TEXT NOT NULL,
+                descripcion TEXT
+            );"""
         ]
 
         conn = self.__connect()
