@@ -28,7 +28,7 @@ class Usuarios(Resource):
 
                 # Organizar los datos por ID
                 for row in fetch:
-                    result[row[1]] = row  # Asegura que `fetch_all` devuelve diccionarios
+                    result[row[1]] = row
 
             # ===== Confirmación
             return {"status":"fetched!","data":result}, 200
@@ -62,7 +62,7 @@ class Usuarios(Resource):
                     db.execute_query("INSERT INTO usuarios(nombre, correo, contraseña) VALUES(?, ?, ?)",(nombre,correo,contraseña))
 
             # ===== Confirmación
-            return {"status":"created!"}, 200
+            return {"status":"created!"}, 201
         
         # ===== Manejor de errores
         except KeyError as ex: return {"status":"failed!","reason":f"The key {ex} was not in request."}, 400
@@ -81,7 +81,6 @@ class Usuarios(Resource):
             else: raise RuntimeError("Se espera que el valor de 'id' sea de tipo lista, int, o null.")
 
             # ===== Consulta BD
-            result = {}
             if ids:
                 placeholders = ",".join(["?"] * len(ids))  # Genera "?, ?, ?" según la cantidad de IDs
                 query = f"DELETE FROM usuarios WHERE id IN ({placeholders})"
