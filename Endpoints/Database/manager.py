@@ -32,8 +32,9 @@ class DatabaseManager:
             try:
                 subprocess.run(["rclone", "copy", f"{self.drive_remote}/{self.db_filename}", "./"], check=True)
                 print("Base de datos descargada correctamente.")
-            except subprocess.CalledProcessError as e:
-                print(f"Error al descargar la base de datos: {e}")
+            except Exception as e:
+                print(f"No se pudo conectar con Rclone por: {e}.\nGenerando localmente...")
+                with open(self.db_path,'w'): pass
 
     def __upload_db_to_drive(self) -> None:
         """
@@ -42,8 +43,8 @@ class DatabaseManager:
         try:
             subprocess.run(["rclone", "copy", self.db_path, self.drive_remote], check=True)
             print("Base de datos subida a Google Drive correctamente.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error al subir la base de datos: {e}")
+        except Exception as e:
+            print(f"Error al subir la base de datos con Rclone, Saltando proceso: {e}")
 
     def __connect(self) -> sqlite3.Connection:
         """
