@@ -81,7 +81,33 @@ class DatabaseManager:
                 clave TEXT UNIQUE NOT NULL,
                 valor TEXT NOT NULL,
                 descripcion TEXT
+            );""",
+            """CREATE TABLE IF NOT EXISTS publicaciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha DATE NOT NULL,
+                alcance_total INTEGER NOT NULL,
+                impresiones INTEGER NOT NULL,
+                interacciones INTEGER NOT NULL,
+                clics_en_enlace INTEGER NOT NULL,
+                reacciones INTEGER NOT NULL,
+                comentarios INTEGER NOT NULL,
+                compartidos INTEGER NOT NULL,
+                cpc_mxn REAL NOT NULL,
+                tasa_de_conversion REAL NOT NULL,
+                gasto_publicitario_mxn REAL NOT NULL,
+                seguidores_nuevos INTEGER NOT NULL,
+                total_de_seguidores INTEGER NOT NULL
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS audiencia (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha DATE NOT NULL,
+                edad_promedio REAL NOT NULL,
+                porcentaje_hombres REAL NOT NULL,
+                porcentaje_mujeres REAL NOT NULL,
+                ubicacion_principal TEXT NOT NULL
             );"""
+
         ]
 
         conn = self.__connect()
