@@ -73,6 +73,7 @@ class DatabaseManager:
                 usuario_id INTEGER,
                 pregunta TEXT NOT NULL,
                 respuesta TEXT NOT NULL,
+                tiempo_respuesta REAL,
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
             );""",

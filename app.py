@@ -22,7 +22,7 @@ api = Api(app)
 
 # ===== Endpoints
 api.add_resource(Usuarios,         "/api/g/usuarios")
-api.add_resource(Chatbot_Response, "/api/a/chat_response")
+api.add_resource(Chatbot_Response, "/api/a/chat")
 api.add_resource(Chatbot_Config,   "/api/a/chat_config")
 
 
