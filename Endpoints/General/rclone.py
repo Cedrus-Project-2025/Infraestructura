@@ -3,7 +3,7 @@ import os
 def validar_rclone():
     ''' 
     '''
-    file_path = os.path.join(os.getenv("HOME"),'.config','rclone','rclone.conf')
+    file_path = os.path.join(os.getenv("HOME",os.path.dirname(__file__)),'.config','rclone','rclone.conf')
     if not(os.path.isfile(file_path)):
         os.makedirs(
             os.path.dirname(file_path),
