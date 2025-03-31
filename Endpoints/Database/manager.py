@@ -73,6 +73,7 @@ class DatabaseManager:
                 usuario_id INTEGER,
                 pregunta TEXT NOT NULL,
                 respuesta TEXT NOT NULL,
+                tiempo_respuesta REAL,
                 fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
             );""",
@@ -81,7 +82,156 @@ class DatabaseManager:
                 clave TEXT UNIQUE NOT NULL,
                 valor TEXT NOT NULL,
                 descripcion TEXT
+            );""",
+            """CREATE TABLE IF NOT EXISTS informacion_general (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                eslogan TEXT,
+                descripcion TEXT,
+                sitio_web TEXT,
+                año_fundacion INTEGER,
+                estado_desarrollo TEXT,
+                fecha_entrega_estimada TEXT
+            );""",
+            """CREATE TABLE IF NOT EXISTS ubicacion (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                direccion TEXT,
+                colonia TEXT,
+                municipio TEXT,
+                estado TEXT,
+                codigo_postal TEXT,
+                latitud REAL,
+                longitud REAL
+            );""",
+            """CREATE TABLE IF NOT EXISTS puntos_interes_cercanos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ubicacion_id INTEGER,
+                nombre TEXT,
+                distancia TEXT,
+                FOREIGN KEY (ubicacion_id) REFERENCES ubicacion(id)
+            );""",
+            """CREATE TABLE IF NOT EXISTS terreno (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                superficie_total INTEGER,
+                numero_lotes INTEGER,
+                precio_m2 INTEGER,
+                moneda TEXT,
+                lotes_disponibles INTEGER
+            );""",
+            """CREATE TABLE IF NOT EXISTS tamanos_lote (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                terreno_id INTEGER,
+                tipo TEXT,
+                superficie_min INTEGER,
+                superficie_max INTEGER,
+                FOREIGN KEY (terreno_id) REFERENCES terreno(id)
+            );""",
+            """CREATE TABLE IF NOT EXISTS restricciones_construccion (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                terreno_id INTEGER,
+                restriccion TEXT,
+                FOREIGN KEY (terreno_id) REFERENCES terreno(id)
+            );""",
+            """CREATE TABLE IF NOT EXISTS amenidades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL
+            );""",
+            """CREATE TABLE IF NOT EXISTS modelos_casa (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT,
+                descripcion TEXT,
+                habitaciones INTEGER,
+                banos REAL,
+                superficie_construccion INTEGER,
+                niveles INTEGER,
+                precio_desde REAL,
+                disponibilidad TEXT
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS caracteristicas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                modelo_id INTEGER,
+                caracteristica TEXT,
+                FOREIGN KEY (modelo_id) REFERENCES modelos_casa(id)
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS plan_financiamiento_opciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                descripcion TEXT
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS beneficios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                opcion_id INTEGER,
+                beneficio TEXT,
+                FOREIGN KEY (opcion_id) REFERENCES plan_financiamiento_opciones(id)
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS requisitos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                opcion_id INTEGER,
+                requisito TEXT,
+                FOREIGN KEY (opcion_id) REFERENCES plan_financiamiento_opciones(id)
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS plazos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                opcion_id INTEGER,
+                plazo INTEGER,
+                FOREIGN KEY (opcion_id) REFERENCES plan_financiamiento_opciones(id)
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS plan_financiamiento_condiciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                condicion TEXT
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS contacto (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                oficina_ventas TEXT,
+                horario TEXT,
+                telefono_principal TEXT,
+                correo TEXT
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS whatsapp (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                contacto_id INTEGER,
+                numero TEXT,
+                FOREIGN KEY (contacto_id) REFERENCES contacto(id)
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS redes_sociales (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                contacto_id INTEGER,
+                facebook TEXT,
+                instagram TEXT,
+                youtube TEXT,
+                FOREIGN KEY (contacto_id) REFERENCES contacto(id)
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS faq (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pregunta TEXT,
+                respuesta TEXT
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS testimonios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT,
+                comentario TEXT,
+                fecha TEXT
+            );""",
+
+            """CREATE TABLE IF NOT EXISTS etapas_desarrollo (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fase TEXT,
+                estado TEXT,
+                fecha_entrega TEXT,
+                lotes TEXT,
+                porcentaje REAL
             );"""
+
         ]
 
         conn = self.__connect()

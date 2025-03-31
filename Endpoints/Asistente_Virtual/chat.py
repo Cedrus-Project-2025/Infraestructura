@@ -28,21 +28,21 @@ class Chatbot_Response(Resource):
 
             # ===== Tiempo de fin y cálculo
             fin = time.time()
-            duracion = round(fin - inicio, 3)  # tiempo en segundos con milisegundos
+            tiempo_respuesta = round(fin - inicio, 3)  # tiempo en segundos con milisegundos
 
             # ===== Guardar en base de datos
             query = """
-                INSERT INTO chatbot_interacciones (pregunta, respuesta) 
-                VALUES (?, ?)
+                INSERT INTO chatbot_interacciones (pregunta, respuesta, tiempo_respuesta) 
+                VALUES (?, ?, ?)
             """
-            db.execute_query(query, (pregunta, respuesta))
+            db.execute_query(query, (pregunta, respuesta, tiempo_respuesta))
 
             # ===== Devolver respuesta
             return {
                 "status": "created!",
                 "pregunta": pregunta,
                 "respuesta": respuesta,
-                "tiempo_respuesta": duracion
+                "tiempo_respuesta": tiempo_respuesta
             }, 201
 
         except KeyError as ex:
