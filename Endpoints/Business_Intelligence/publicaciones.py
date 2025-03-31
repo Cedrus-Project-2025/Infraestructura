@@ -1,17 +1,16 @@
 import os, sys
+import re  
 from flask import request
 from flask_restful import Resource
 from ..Database.manager import DatabaseManager
 
 db = DatabaseManager()
 
-
 class Publicaciones(Resource):
     def get(self):
         try:
             data = request.json if request.is_json else {}
 
-            # Lista de columnas permitidas en la tabla
             allowed_fields = [
                 "id", "fecha", "alcance_total", "impresiones", "interacciones", "clics_en_enlace",
                 "reacciones", "comentarios", "compartidos", "cpc_mxn", "tasa_de_conversion",
@@ -21,7 +20,6 @@ class Publicaciones(Resource):
             filters = []
             values = []
 
-            # Filtrado por ID (permite un solo ID o una lista de IDs)
             ids = data.get("id", None)
             if ids is not None:
                 if isinstance(ids, int):
@@ -32,38 +30,42 @@ class Publicaciones(Resource):
                 filters.append(f"id IN ({','.join(['?']*len(ids))})")
                 values.extend(ids)
 
-            # Construimos los filtros dinámicos según los parámetros recibidos
-            for key, value in data.items():
-                if key == "id":
-                    continue  # Ya manejamos ID arriba
+            for field, value in data.items():
+                if field == "id":
+                    continue  
 
-                if "__" in key:  
-                    field, operator = key.split("__", 1)  # Divide la clave (ej. seguidores_nuevos__gte)
-                    if field not in allowed_fields:
-                        continue  # Ignorar campos no válidos
-                    
-                    if operator == "gte":  # Mayor o igual (>=)
-                        filters.append(f"{field} >= ?")
-                    elif operator == "lte":  # Menor o igual (<=)
-                        filters.append(f"{field} <= ?")
-                    elif operator == "gt":  # Mayor que (>)
-                        filters.append(f"{field} > ?")
-                    elif operator == "lt":  # Menor que (<)
-                        filters.append(f"{field} < ?")
-                    elif operator == "eq":  # Igual (=)
+                if field not in allowed_fields:
+                    continue  
+
+                if isinstance(value, (int, float)):  
+                    filters.append(f"{field} = ?")
+                    values.append(value)
+                elif isinstance(value, str):
+                    match = re.match(r"^(<=|>=|=|<|>)(\d+(\.\d+)?)$", value)
+                    if match:
+                        operator, num_value, _ = match.groups()
+                        filters.append(f"{field} {operator} ?")
+                        values.append(float(num_value))  
+                    elif value.isdigit():  
                         filters.append(f"{field} = ?")
+                        values.append(int(value))
                     else:
-                        continue
+                        return {"status": "failed", "reason": f"Formato inválido para {field}. Usa operadores como >1000, <=500, etc."}, 400
 
-                    values.append(value)  # Guardamos el valor
-
-            # Si hay filtros, los agregamos a la consulta
             where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
 
             query = f"SELECT * FROM publicaciones {where_clause}"
+            print(f"Ejecutando query: {query} con valores: {values}")  # Debug
+
             result = db.fetch_all(query, values)
 
-            return {"status": "fetched", "data": result}, 200
+            if not result:
+                return {"status": "fetched", "data": [], "message": "No se encontraron resultados"}, 200
+
+            # Convertir las filas en diccionarios con nombres de columna
+            respuesta = [dict(zip(allowed_fields, fila)) for fila in result]
+
+            return {"status": "fetched", "data": respuesta}, 200
 
         except Exception as ex:
             return {"status": "failed", "reason": str(ex)}, 500
