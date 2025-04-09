@@ -3,9 +3,7 @@ import time
 from flask import request
 from flask_restful import Resource
 
-from ..Database.manager import DatabaseManager
 
-db = DatabaseManager()
 
 class Chatbot_Response(Resource):
     def post(self):
