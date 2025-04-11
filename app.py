@@ -8,8 +8,8 @@ from Endpoints.General.usuarios import Usuarios
 from Endpoints.General.rclone import validar_rclone
 from Endpoints.Asistente_Virtual.chat import Chatbot_Response
 from Endpoints.Asistente_Virtual.configs import Chatbot_Config
-from Endpoints.Business_Intelligence.publicaciones import Publicaciones
-from Endpoints.Business_Intelligence.audiencia import Audiencia
+from Endpoints.Business_Intelligence.registrospubli import PublicacionesAPI
+from Endpoints.Business_Intelligence.registrosaudi import AudienciaAPI
 
 # ===== Validaciones iniciales
 load_dotenv()
@@ -28,8 +28,8 @@ api.add_resource(Usuarios,         "/api/g/usuarios")
 api.add_resource(Chatbot_Response, "/api/a/chat_response")
 api.add_resource(Chatbot_Config,   "/api/a/chat_config")
 
-api.add_resource(Publicaciones,    "/api/b/publicaciones")
-api.add_resource(Audiencia,        "/api/b/audiencia")
+api.add_resource(PublicacionesAPI,    "/business/registers")
+api.add_resource(AudienciaAPI,        "/business/registers")
 
 
 if __name__ == "__main__":

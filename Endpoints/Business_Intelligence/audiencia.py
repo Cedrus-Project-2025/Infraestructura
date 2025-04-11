@@ -1,4 +1,4 @@
-import os, sys
+'''import os, sys
 from flask import request
 from flask_restful import Resource
 from ..Database.manager import DatabaseManager
