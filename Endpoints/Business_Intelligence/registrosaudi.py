@@ -1,4 +1,4 @@
-'''from flask_restful import Resource, request
+from flask_restful import Resource, request
 from api_methods import API_Methods
 import time
 import re
