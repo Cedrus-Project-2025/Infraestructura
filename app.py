@@ -5,7 +5,7 @@ from flask_restful import Api
 from flask_cors import CORS
 
 
-from Scripts.Asistente_Virtual.chat import Chatbot_Response
+from Scripts.Asistente_Virtual.chat import Chatbot_Interacciones
 from Scripts.Asistente_Virtual.configs import Obtener_Configs
 
 # ===== Validaciones iniciales
@@ -19,7 +19,7 @@ api = Api(app)
 
 
 # ===== Endpoints
-api.add_resource(Chatbot_Response, "/api/a/chat")
+api.add_resource(Chatbot_Interacciones, "/api/a/chat")
 api.add_resource(Obtener_Configs,   "/api/a/configs")
 
 

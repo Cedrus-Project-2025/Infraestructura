@@ -1,49 +1,64 @@
-import os, sys
-import time
-from flask import request
-from flask_restful import Resource
+import os, time
+import requests
+from flask import Flask, request
+from flask_restful import Api, Resource
+from ..api_methods import API_Methods
+from dotenv import load_dotenv
 
+load_dotenv()
 
+url_db = os.getenv("URL_DATABASE", "")
 
-class Chatbot_Response(Resource):
+class Chatbot_Interacciones(Resource):
+    def __init__(self):
+        self.api_base_datos = API_Methods(url=url_db)
+        #self.api_chat = API_Methods(link_chatbot)        
+
+        #Obtener payload
     def post(self):
         try:
-            # ===== Validación de datos
-            data = request.json
-            if not isinstance(data, dict):
-                raise RuntimeError("Se espera que el body del JSON sea un diccionario.")
-
-            pregunta = data.get('pregunta', None)
+            ## Obtener el payload de la solicitud
+            payload:dict = request.json
+            pregunta = payload.get('pregunta')
+            tiempo_inicio = time.time()
             if not pregunta:
-                raise RuntimeError("No se encontró una pregunta válida. Por favor, revisa tu solicitud.")
+                return {"error": "Falta el parámetro 'pregunta'"}, 400
 
-            # ===== Tiempo de inicio
-            inicio = time.time()
+            #Enviar pregunta a chat
+            # code, response_chat = self.api_chat.POST(
+            #     endpoint="/chat", #endpoint de Alan
+            #     data={"pregunta": pregunta}
+            # )
+            # if code == "Failure to post":
+            #     return {"error": "Error al enviar la pregunta al chatbot"}, 500
+            # respuesta = response_chat.get("respuesta")
+            # if not respuesta:
+            #     return {"error": "No se recibió respuesta del chatbot"}, 500
 
-            # ===== Simulación de respuesta del chatbot
-            respuesta = f"Respuesta generada para: '{pregunta}'"
-            # Aquí es donde llamarás a tu modelo real en el futuro
+            # Simulamos la respuesta del chatbot (hasta que tengas un endpoint real)
+            respuesta = f"Respuesta simulada a: {pregunta}"
+            tiempo_respuesta = time.time() - tiempo_inicio
 
-            # ===== Tiempo de fin y cálculo
-            fin = time.time()
-            tiempo_respuesta = round(fin - inicio, 3)  # tiempo en segundos con milisegundos
+            #Enviar pregunta y respuesta a la base de datos
+            code, response_db = self.api_base_datos.POST(
+                endpoint="/chat/registers",
+                data={
+                    "nombre_tabla": "chatbot_interacciones",
+                    "registros": [
+                        {
+                            "pregunta": pregunta,
+                            "respuesta": respuesta,
+                            "tiempo_respuesta": tiempo_respuesta
+                        }
+                    ]
+                }
+            )
+            if code == "Failure to post":
+                return {"error": "Error al guardar la interacción en la base de datos"}, 500
 
-            # ===== Guardar en base de datos
-            query = """
-                INSERT INTO chatbot_interacciones (pregunta, respuesta, tiempo_respuesta) 
-                VALUES (?, ?, ?)
-            """
-            db.execute_query(query, (pregunta, respuesta, tiempo_respuesta))
+            return {"pregunta": pregunta, "respuesta": respuesta}, 200
 
-            # ===== Devolver respuesta
-            return {
-                "status": "created!",
-                "pregunta": pregunta,
-                "respuesta": respuesta,
-                "tiempo_respuesta": tiempo_respuesta
-            }, 201
+        except Exception as e:
+            return {"error": str(e)}, 500
 
-        except KeyError as ex:
-            return {"status": "failed!", "reason": f"The key {ex} was not in request."}, 400
-        except Exception as ex:
-            return {"status": "failed!", "reason": f"{ex}"}, 500
+            
