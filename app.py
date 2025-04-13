@@ -1,20 +1,12 @@
-import os, sys
+import sys
 from dotenv import load_dotenv
-from flask import Flask, request
+from flask import Flask
 from flask_restful import Api
 from flask_cors import CORS
-
-from Endpoints.General.usuarios import Usuarios
-from Endpoints.General.rclone import validar_rclone
-from Endpoints.Asistente_Virtual.chat import Chatbot_Response
-from Endpoints.Asistente_Virtual.configs import Chatbot_Config
-from Endpoints.Business_Intelligence.registrospubli import PublicacionesAPI
-from Endpoints.Business_Intelligence.registrosaudi import AudienciaAPI
 
 # ===== Validaciones iniciales
 load_dotenv()
 sys.stdout = sys.stderr
-validar_rclone()
 
 # ===== Configuracion API
 app = Flask(__name__)
@@ -22,14 +14,33 @@ CORS(app)
 api = Api(app)
 
 
-# ===== Endpoints
-api.add_resource(Usuarios,         "/api/g/usuarios")
+# ===== Endpoints Chat
+from Scripts.Asistente_Virtual.chat    import Chatbot_Response
+from Scripts.Asistente_Virtual.configs import Obtener_Configs
 
-api.add_resource(Chatbot_Response, "/api/a/chat_response")
-api.add_resource(Chatbot_Config,   "/api/a/chat_config")
+api.add_resource(Chatbot_Response, "/api/a/chat")
+api.add_resource(Obtener_Configs,  "/api/a/configs")
 
-api.add_resource(PublicacionesAPI,    "/business/registers")
-api.add_resource(AudienciaAPI,        "/business/registers")
+
+
+
+# ===== Endpoints BI
+from Scripts.Business_Intelligence.audiencia      import Audiencia
+from Scripts.Business_Intelligence.registrospubli import PublicacionesAPI
+from Scripts.Business_Intelligence.registrosaudi  import AudienciaAPI
+
+api.add_resource(Audiencia,        '/api/b/audiencia')
+api.add_resource(PublicacionesAPI, '/api/b/publicaciones')
+api.add_resource(AudienciaAPI,     '/api/b/audiencia')
+
+
+
+
+# ===== Endpoints Web
+from Scripts.Desarrollo_Web.web_config import ContactoCentro_Config, OpcionesContacto_Config
+api.add_resource(ContactoCentro_Config,   '/api/w/contacto_centro')
+api.add_resource(OpcionesContacto_Config, '/api/w/opciones_contacto')
+
 
 
 if __name__ == "__main__":
