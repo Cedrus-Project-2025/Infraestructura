@@ -1,9 +1,10 @@
 from flask_restful import Resource, request
-from api_methods import API_Methods
 import time
 import re
 import os
 from dotenv import load_dotenv
+
+from ..api_methods import API_Methods
 
 load_dotenv()  # Esto busca el archivo .env y carga las variables
 
