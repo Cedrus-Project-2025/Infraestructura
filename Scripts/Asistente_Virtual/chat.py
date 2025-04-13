@@ -1,4 +1,3 @@
-import os, sys
 import time
 from flask import request
 from flask_restful import Resource
@@ -29,11 +28,12 @@ class Chatbot_Response(Resource):
             tiempo_respuesta = round(fin - inicio, 3)  # tiempo en segundos con milisegundos
 
             # ===== Guardar en base de datos
-            query = """
-                INSERT INTO chatbot_interacciones (pregunta, respuesta, tiempo_respuesta) 
-                VALUES (?, ?, ?)
-            """
-            db.execute_query(query, (pregunta, respuesta, tiempo_respuesta))
+            # Diego: Modificar para que haga la consulta al microservicio de la BD.
+            # query = """
+            #     INSERT INTO chatbot_interacciones (pregunta, respuesta, tiempo_respuesta) 
+            #     VALUES (?, ?, ?)
+            # """
+            # db.execute_query(query, (pregunta, respuesta, tiempo_respuesta))
 
             # ===== Devolver respuesta
             return {

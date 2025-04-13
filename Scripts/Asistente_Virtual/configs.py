@@ -1,7 +1,6 @@
 import os
-import requests
-from flask import Flask, request
-from flask_restful import Api, Resource
+from flask import request
+from flask_restful import Resource
 from ..api_methods import API_Methods
 from dotenv import load_dotenv
 
@@ -25,6 +24,44 @@ def filtrar_campos(data, campos_a_excluir=("id", "fecha_creacion")):
         ]
     else:
         return data
+    
+# Función para construir el prompt 
+def build_prompt(configs:dict):
+
+    prompt_introduccion = configs.get("PROMPT_INTRODUCCION", "")
+    prompt_introduccion = prompt_introduccion.replace("{{insertar_name}}", configs.get("NAME", ""))#placeholders
+    prompt_introduccion = prompt_introduccion.replace("{{insertar_project}}", configs.get("PROJECT", ""))
+    prompt_introduccion = prompt_introduccion.replace("{{insertar_location}}", configs.get("LOCATION", ""))
+    prompt_introduccion = prompt_introduccion.replace("{{insertar_experience}}", configs.get("EXPERIENCE", ""))
+    prompt_introduccion = prompt_introduccion.replace("{{insertar_sector}}", configs.get("SECTOR", ""))
+
+
+    prompt_personalidad = configs.get("PROMPT_PERSONALIDAD", "")
+    prompt_personalidad = prompt_personalidad.replace("{{insertar_phrase1}}", configs.get("PHRASE1", ""))
+    prompt_personalidad = prompt_personalidad.replace("{{insertar_phrase2}}", configs.get("PHRASE2", ""))
+
+    prompt_objetivos = configs.get("PROMPT_OBJETIVOS", "")
+
+    prompt_lineamientos = configs.get("PROMPT_LINEAMIENTOS", "")
+    prompt_lineamientos = prompt_lineamientos.replace("{{insertar_concise}}", configs.get("CONCISE", ""))
+    prompt_lineamientos = prompt_lineamientos.replace("{{insertar_callaction}}", configs.get("CALLACTION", ""))
+    prompt_lineamientos = prompt_lineamientos.replace("{{insertar_negation1}}", configs.get("NEGATION1", ""))
+    prompt_lineamientos = prompt_lineamientos.replace("{{insertar_negation2}}", configs.get("NEGATION2", ""))
+
+
+    prompt_resp_indicaciones = configs.get("PROMPT_RESPUESTA_INDICACIONES", "")
+    prompt_resp_indicaciones = prompt_resp_indicaciones.replace("{{insertar_name}}", configs.get("NAME", ""))
+    prompt_resp_indicaciones = prompt_resp_indicaciones.replace("{{insertar_project}}", configs.get("PROJECT", ""))
+
+    # Unificamos todas las secciones del prompt
+    prompt_final = "\n\n".join([
+        prompt_introduccion,
+        prompt_personalidad,
+        prompt_objetivos,
+        prompt_lineamientos,
+        prompt_resp_indicaciones
+    ])
+    return prompt_final
 
 'endpoint: /chat/configs'
 class Obtener_Configs(Resource):
@@ -48,49 +85,13 @@ class Obtener_Configs(Resource):
                 ("clave": "API_KEY", "valor": "123456789", "descripcion": "Clave de API"),
         }
         '''
-        if code == "Failure to get data" or "result" not in response_key:
+        if (code == "Failure to get data") or ("result" not in response_key):
             return {"error": "Error al obtener la configuración"}, 500
 
         # Convertir la lista de registros en un diccionario
         configs = {item["clave"]: item["valor"] for item in response_key["result"]}
 
-        # Función interna para construir el prompt 
-        def build_prompt():
-
-            prompt_introduccion = configs.get("PROMPT_INTRODUCCION", "")
-            prompt_introduccion = prompt_introduccion.replace("{{insertar_name}}", configs.get("NAME", ""))#placeholders
-            prompt_introduccion = prompt_introduccion.replace("{{insertar_project}}", configs.get("PROJECT", ""))
-            prompt_introduccion = prompt_introduccion.replace("{{insertar_location}}", configs.get("LOCATION", ""))
-            prompt_introduccion = prompt_introduccion.replace("{{insertar_experience}}", configs.get("EXPERIENCE", ""))
-            prompt_introduccion = prompt_introduccion.replace("{{insertar_sector}}", configs.get("SECTOR", ""))
-
-
-            prompt_personalidad = configs.get("PROMPT_PERSONALIDAD", "")
-            prompt_personalidad = prompt_personalidad.replace("{{insertar_phrase1}}", configs.get("PHRASE1", ""))
-            prompt_personalidad = prompt_personalidad.replace("{{insertar_phrase2}}", configs.get("PHRASE2", ""))
-
-            prompt_objetivos = configs.get("PROMPT_OBJETIVOS", "")
-
-            prompt_lineamientos = configs.get("PROMPT_LINEAMIENTOS", "")
-            prompt_lineamientos = prompt_lineamientos.replace("{{insertar_concise}}", configs.get("CONCISE", ""))
-            prompt_lineamientos = prompt_lineamientos.replace("{{insertar_callaction}}", configs.get("CALLACTION", ""))
-            prompt_lineamientos = prompt_lineamientos.replace("{{insertar_negation1}}", configs.get("NEGATION1", ""))
-            prompt_lineamientos = prompt_lineamientos.replace("{{insertar_negation2}}", configs.get("NEGATION2", ""))
-
         
-            prompt_resp_indicaciones = configs.get("PROMPT_RESPUESTA_INDICACIONES", "")
-            prompt_resp_indicaciones = prompt_resp_indicaciones.replace("{{insertar_name}}", configs.get("NAME", ""))
-            prompt_resp_indicaciones = prompt_resp_indicaciones.replace("{{insertar_project}}", configs.get("PROJECT", ""))
-
-            # Unificamos todas las secciones del prompt
-            prompt_final = "\n\n".join([
-                prompt_introduccion,
-                prompt_personalidad,
-                prompt_objetivos,
-                prompt_lineamientos,
-                prompt_resp_indicaciones
-            ])
-            return prompt_final
 
         # ----- Parte 2: Obtener la tabla de contexto -----
 
@@ -105,7 +106,7 @@ class Obtener_Configs(Resource):
                     "result": [
                         ("título": "vhgvg", "descripcion": "erfer", "icono": "vdfvdf", "imagen": "vdfcvdf", "alt_text": "vdrg", "orden": "vdfvsdf"),
         '''
-        if code == "Failure to get data" or "result" not in response_proyectos:
+        if (code == "Failure to get data") or ("result" not in response_proyectos):
             proyectos = []
         else:
             proyectos = filtrar_campos(response_proyectos["result"], ("id", "fecha_creacion"))
@@ -118,7 +119,7 @@ class Obtener_Configs(Resource):
                 return {"error": "No se encontró la API_KEY"}, 404
             return {"api_key": configs["API_KEY"]}, 200
         elif modo == "prompt":
-            return {"prompt": build_prompt()}, 200
+            return {"prompt": build_prompt(configs)}, 200
         elif modo == "proyectos":
             return {"proyectos": proyectos}, 200
         else:
@@ -126,7 +127,7 @@ class Obtener_Configs(Resource):
             result_data = {}
             if "API_KEY" in configs:
                 result_data["api_key"] = configs["API_KEY"]
-            result_data["prompt"] = build_prompt()
+            result_data["prompt"] = build_prompt(configs)
             result_data["proyectos"] = proyectos
             return result_data, 200
 
