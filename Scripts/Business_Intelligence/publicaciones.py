@@ -2,9 +2,6 @@ import os, sys
 import re  
 from flask import request
 from flask_restful import Resource
-from ..Database.manager import DatabaseManager
-
-db = DatabaseManager()
 
 class Publicaciones(Resource):
     def get(self):
@@ -57,13 +54,13 @@ class Publicaciones(Resource):
             query = f"SELECT * FROM publicaciones {where_clause}"
             print(f"Ejecutando query: {query} con valores: {values}")  # Debug
 
-            result = db.fetch_all(query, values)
+            # result = db.fetch_all(query, values)
 
-            if not result:
-                return {"status": "fetched", "data": [], "message": "No se encontraron resultados"}, 200
+            # if not result:
+            #     return {"status": "fetched", "data": [], "message": "No se encontraron resultados"}, 200
 
             # Convertir las filas en diccionarios con nombres de columna
-            respuesta = [dict(zip(allowed_fields, fila)) for fila in result]
+            respuesta = ['dict(zip(allowed_fields, fila)) for fila in result']
 
             return {"status": "fetched", "data": respuesta}, 200
 
@@ -88,15 +85,15 @@ class Publicaciones(Resource):
                 if not all(field in item for field in required_fields):
                     raise RuntimeError(f"Faltan campos obligatorios en la solicitud: {required_fields}")
 
-                db.execute_query(
-                    "INSERT INTO publicaciones (fecha, alcance_total, impresiones, interacciones, clics_en_enlace, "
-                    "reacciones, comentarios, compartidos, cpc_mxn, tasa_de_conversion, gasto_publicitario_mxn, "
-                    "seguidores_nuevos, total_de_seguidores) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (item["fecha"], item["alcance_total"], item["impresiones"], item["interacciones"],
-                    item["clics_en_enlace"], item["reacciones"], item["comentarios"], item["compartidos"],
-                    item["cpc_mxn"], item["tasa_de_conversion"], item["gasto_publicitario_mxn"],
-                    item["seguidores_nuevos"], item["total_de_seguidores"])
-                )
+                # db.execute_query(
+                #     "INSERT INTO publicaciones (fecha, alcance_total, impresiones, interacciones, clics_en_enlace, "
+                #     "reacciones, comentarios, compartidos, cpc_mxn, tasa_de_conversion, gasto_publicitario_mxn, "
+                #     "seguidores_nuevos, total_de_seguidores) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                #     (item["fecha"], item["alcance_total"], item["impresiones"], item["interacciones"],
+                #     item["clics_en_enlace"], item["reacciones"], item["comentarios"], item["compartidos"],
+                #     item["cpc_mxn"], item["tasa_de_conversion"], item["gasto_publicitario_mxn"],
+                #     item["seguidores_nuevos"], item["total_de_seguidores"])
+                # )
 
             return {
                 "status": "created",
@@ -122,7 +119,7 @@ class Publicaciones(Resource):
             if ids:
                 placeholders = ",".join(["?"] * len(ids))
                 query = f"DELETE FROM publicaciones WHERE id IN ({placeholders})"
-                db.execute_query(query, ids)
+                # db.execute_query(query, ids)
 
             return {"status": "deleted"}, 200
 
