@@ -14,7 +14,7 @@ CORS(app)
 api = Api(app)
 
 
-# ===== Endpoints Chat
+# ===== Endpoints Asistente Virtual
 from Scripts.Asistente_Virtual.chat    import Chatbot_Response
 from Scripts.Asistente_Virtual.configs import Obtener_Configs
 
@@ -25,11 +25,9 @@ api.add_resource(Obtener_Configs,  "/api/a/configs")
 
 
 # ===== Endpoints BI
-from Scripts.Business_Intelligence.audiencia      import Audiencia
 from Scripts.Business_Intelligence.registrospubli import PublicacionesAPI
 from Scripts.Business_Intelligence.registrosaudi  import AudienciaAPI
 
-api.add_resource(Audiencia,        '/api/b/audiencia')
 api.add_resource(PublicacionesAPI, '/api/b/publicaciones')
 api.add_resource(AudienciaAPI,     '/api/b/audiencia')
 
@@ -41,7 +39,3 @@ from Scripts.Desarrollo_Web.web_config import ContactoCentro_Config, OpcionesCon
 api.add_resource(ContactoCentro_Config,   '/api/w/contacto_centro')
 api.add_resource(OpcionesContacto_Config, '/api/w/opciones_contacto')
 
-
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=10000)
