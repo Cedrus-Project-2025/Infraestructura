@@ -51,23 +51,22 @@ Si prefieres ejecutar la aplicación localmente en tu máquina:
 
 ## Crea un entorno virtual
 python -m venv venv
-source venv/bin/activate  # en Linux/Mac
-venv\Scripts\activate  # en Windows
+venv\Scripts\activate # Windows
 
 ## Instala las dependencias
 pip install -r requirements.txt
 
 ## Configura las variables de entorno
-URL_DATABASE=<URL_de_tu_base_de_datos>
-URL_CHAT=<URL_de_tu_servicio_chatbot>
+- URL_DATABASE=<URL_de_tu_base_de_datos>
+- URL_CHAT=<URL_de_tu_servicio_chatbot>
 
 ## Ejecuta la aplicación
 python app.py
 
 ## Ejecución con Docker
 ## Crea y levanta el contenedor
-clear; docker build -t cumbres-api .; docker run -p 5000:5000 cumbres-api #linux
-cls; docker build -t cumbres-api .; docker run -p 5000:5000 cumbres-api #windows
+- clear; docker build -t cumbres-api .; docker run -p 5000:5000 cumbres-api #linux
+- cls; docker build -t cumbres-api .; docker run -p 5000:5000 cumbres-api #windows
 
 ## Endpoints Principales
 1. Scripts/Asistente_Virtual/chat.py
@@ -75,7 +74,7 @@ cls; docker build -t cumbres-api .; docker run -p 5000:5000 cumbres-api #windows
 
 ## Notas Adicionales
 - Docker:
-Si encuentras problemas al construir o ejecutar la imagen, revisa los logs usando docker logs y asegúrate de que Docker esté actualizado.\
+Si encuentras problemas al construir o ejecutar la imagen, revisa los logs usando docker logs y asegúrate de que Docker esté actualizado.
 - Base de Datos y Servicios Externos:
 Verifica que los endpoints /chat/registers y /web/registers estén activos y se puedan acceder desde tu entorno.
 
