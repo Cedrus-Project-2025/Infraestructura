@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 url_db = os.getenv("URL_DATABASE", "")
+url_chatbot = os.getenv("URL_CHAT", "")
 
 def filtrar_campos(data, campos_a_excluir=("id", "fecha_creacion")):
     """
@@ -64,7 +65,7 @@ def build_prompt(configs:dict):
     return prompt_final
 
 'endpoint: /chat/configs'
-class Obtener_Configs(Resource):
+class ObtenerConfigs(Resource):
     def __init__(self):
         self.api_base_datos = API_Methods(url=url_db)
         #self.api_chat = link_chatbot

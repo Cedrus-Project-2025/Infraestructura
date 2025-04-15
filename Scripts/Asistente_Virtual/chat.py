@@ -1,10 +1,21 @@
+import os
 import time
 from flask import request
 from flask_restful import Resource
+from ..api_methods import API_Methods
+from dotenv import load_dotenv
+
+load_dotenv()
+
+url_db = os.getenv("URL_DATABASE", "")
+url_chatbot = os.getenv("URL_CHAT", "")
 
 
+class ChatbotResponse(Resource):
+    def __init__(self):
+        self.api_base_datos = API_Methods(url=url_db)
+        self.api_chat = API_Methods(url=url_chatbot)
 
-class Chatbot_Response(Resource):
     def post(self):
         try:
             # ===== Validación de datos
@@ -20,20 +31,41 @@ class Chatbot_Response(Resource):
             inicio = time.time()
 
             # ===== Simulación de respuesta del chatbot
-            respuesta = f"Respuesta generada para: '{pregunta}'"
-            # Aquí es donde llamarás a tu modelo real en el futuro
+            code, response = self.api_chat.POST(
+                endpoint="/pregunta",
+                data={"pregunta": pregunta}
+            )
+
+            # Verifica usando el atributo status_code del objeto Response
+            if code.status_code != 200 or response.get("status") != "ok":
+                return {
+                    "status": "failed!",
+                    "reason": "Respuesta inesperada del chatbot.",
+                    "detalle": response
+                }, 400
+
+            respuesta = response.get("resultados", {}).get("respuesta")
 
             # ===== Tiempo de fin y cálculo
             fin = time.time()
             tiempo_respuesta = round(fin - inicio, 3)  # tiempo en segundos con milisegundos
 
             # ===== Guardar en base de datos
-            # Diego: Modificar para que haga la consulta al microservicio de la BD.
-            # query = """
-            #     INSERT INTO chatbot_interacciones (pregunta, respuesta, tiempo_respuesta) 
-            #     VALUES (?, ?, ?)
-            # """
-            # db.execute_query(query, (pregunta, respuesta, tiempo_respuesta))
+            code, response_db = self.api_base_datos.POST(
+                endpoint="/chat/registers",
+                data={
+                    "nombre_tabla": "chatbot_interacciones",
+                    "registros": [
+                        {
+                            "pregunta": pregunta,
+                            "respuesta": respuesta,
+                            "tiempo_respuesta": tiempo_respuesta
+                        }
+                    ]
+                }
+            )
+            if code == "Failure to post":
+                return {"error": "Error al guardar la interacción en la base de datos"}, 500
 
             # ===== Devolver respuesta
             return {
@@ -43,7 +75,5 @@ class Chatbot_Response(Resource):
                 "tiempo_respuesta": tiempo_respuesta
             }, 201
 
-        except KeyError as ex:
-            return {"status": "failed!", "reason": f"The key {ex} was not in request."}, 400
         except Exception as ex:
             return {"status": "failed!", "reason": f"{ex}"}, 500
