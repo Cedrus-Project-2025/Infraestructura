@@ -64,6 +64,18 @@ URL_CHAT=<URL_de_tu_servicio_chatbot>
 ## Ejecuta la aplicación
 python app.py
 
-### Ejecución con Docker
+## Ejecución con Docker
+## Crea y levanta el contenedor
+clear; docker build -t cumbres-api .; docker run -p 5000:5000 cumbres-api #linux
+cls; docker build -t cumbres-api .; docker run -p 5000:5000 cumbres-api #windows
 
+## Endpoints Principales
+1. Scripts/Asistente_Virtual/chat.py
+2. Scripts/Asistente_Virtual/configs.py
+
+## Notas Adicionales
+- Docker:
+Si encuentras problemas al construir o ejecutar la imagen, revisa los logs usando docker logs y asegúrate de que Docker esté actualizado.\
+- Base de Datos y Servicios Externos:
+Verifica que los endpoints /chat/registers y /web/registers estén activos y se puedan acceder desde tu entorno.
 
