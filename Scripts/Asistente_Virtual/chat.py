@@ -7,12 +7,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-url_db = os.getenv("URL_DATABASE", "")
-url_chatbot = os.getenv("URL_CHAT", "")
 
 
 class ChatbotResponse(Resource):
     def __init__(self):
+        url_db = os.getenv("URL_DATABASE", "")
+        url_chatbot = os.getenv("URL_CHATBOT", "")
+
         self.api_base_datos = API_Methods(url=url_db)
         self.api_chat = API_Methods(url=url_chatbot)
 
