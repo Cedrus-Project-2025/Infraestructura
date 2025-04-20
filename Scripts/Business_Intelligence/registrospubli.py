@@ -1,16 +1,20 @@
-from flask_restful import Resource, request
+from flask import request
+from flask_restful import Resource
+import pandas as pd
 import time
-import re
 import os
+import traceback
+import re
 from dotenv import load_dotenv
-
+from sqlalchemy import create_engine
 from ..api_methods import API_Methods
 
-load_dotenv()  # Esto busca el archivo .env y carga las variables
+# Cargar las variables del archivo .env
+load_dotenv()
 
 API_URL = os.getenv("API_BASE_URL")
 
-class PublicacionesAPI(Resource):
+class Publicaciones(Resource):
     def __init__(self):
         self.api = API_Methods(url=API_URL)
 
@@ -70,45 +74,56 @@ class PublicacionesAPI(Resource):
             return response, code
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            return {"error": f"Error en el GET: {str(e)}"}, 500
 
     def post(self):
         try:
-            payload = request.json
+            # Verificar si el archivo está en la solicitud
+            if 'file' in request.files:
+                file = request.files['file']
 
-            campos_requeridos = [
-                "fecha", "alcance_total", "impresiones", "interacciones",
-                "clics_en_enlace", "reacciones", "comentarios", "compartidos",
-                "cpc_mxn", "tasa_de_conversion", "gasto_publicitario_mxn",
-                "seguidores_nuevos", "total_de_seguidores"
-            ]
+                if file and file.filename.endswith('.xlsx'):
+                    # Leer el archivo Excel con pandas
+                    try:
+                        df = pd.read_excel(file)
+                    except Exception as e:
+                        print(f"Error al leer el archivo Excel: {e}")
+                        return {"error": f"Error al leer el archivo Excel: {e}"}, 500
 
-            # Verificar que los campos requeridos estén en el payload
-            if not all(campo in payload for campo in campos_requeridos):
-                return {"error": "Faltan campos obligatorios"}, 400
+                    # Procesar el archivo Excel (por ejemplo, convertir las filas en registros)
+                    registros = []
+                    for _, row in df.iterrows():
+                        try:
+                            registros.append({
+                                "fecha": row["fecha"].strftime("%Y-%m-%d"),  # Formatear la fecha
+                                "alcance_total": row["alcance_total"],
+                                "impresiones": row["impresiones"],
+                                "interacciones": row["interacciones"],
+                                "clics_en_enlace": row["clics_en_enlace"],
+                                "reacciones": row["reacciones"],
+                                "comentarios": row["comentarios"],
+                                "compartidos": row["compartidos"],
+                                "cpc_mxn": row["cpc_mxn"],
+                                "tasa_de_conversion": row["tasa_de_conversion"],
+                                "gasto_publicitario_mxn": row["gasto_publicitario_mxn"],
+                                "seguidores_nuevos": row["seguidores_nuevos"],
+                                "total_de_seguidores": row["total_de_seguidores"]
+                            })
+                        except Exception as e:
+                            print(f"Error procesando la fila {row}: {e}")
+                            return {"error": f"Error procesando la fila {row}: {e}"}, 500
 
-            # Verifica que los campos contengan datos válidos
-            if not isinstance(payload["alcance_total"], (int, float)):
-                return {"error": "'alcance_total' debe ser un número válido"}, 400
+                    # Crear la conexión a la base de datos usando SQLAlchemy
+                    engine = create_engine(API_URL)
 
-            # Crear los datos para enviar
-            data = {
-                "nombre_tabla": "publicaciones",
-                "registros": [
-                    {
-                        **payload,
-                        "timestamp": time.time()
-                    }
-                ]
-            }
-
-            # Hacer el POST a la API
-            code, response = self.api.POST(
-                endpoint="/business/registers",
-                data=data
-            )
-
-            return response, code
+                    # Insertar los registros en la base de datos
+                    try:
+                        df_to_insert = pd.DataFrame(registros)
+                        df_to_insert.to_sql("publicaciones", con=engine, if_exists='append', index=False)
+                        return {"message": "Datos insertados exitosamente en la base de datos"}, 200
+                    except Exception as e:
+                        print(f"Error al insertar los datos en la base de datos: {e}")
+                        return {"error": f"Error al insertar los datos en la base de datos: {e}"}, 500
 
         except Exception as e:
             return {"error": str(e)}, 500
@@ -137,4 +152,6 @@ class PublicacionesAPI(Resource):
             return response, code
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            print(f"Error en el DELETE: {e}")
+            print("Traceback completo:", traceback.format_exc())
+            return {"error": f"Error en el DELETE: {str(e)}"}, 500

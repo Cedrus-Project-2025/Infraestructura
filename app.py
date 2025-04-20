@@ -25,12 +25,11 @@ api.add_resource(Obtener_Configs,  "/api/a/configs")
 
 
 # ===== Endpoints BI
-from Scripts.Business_Intelligence.registrospubli import PublicacionesAPI
+from Scripts.Business_Intelligence.registrospubli import Publicaciones
 from Scripts.Business_Intelligence.registrosaudi  import AudienciaAPI
 
-api.add_resource(PublicacionesAPI, '/api/b/publicaciones')
-api.add_resource(AudienciaAPI,     '/api/b/audiencia')
-
+api.add_resource(Publicaciones, '/business/registers')
+api.add_resource(AudienciaAPI,     '/business/registers')
 
 
 
@@ -39,3 +38,5 @@ from Scripts.Desarrollo_Web.web_config import ContactoCentro_Config, OpcionesCon
 api.add_resource(ContactoCentro_Config,   '/api/w/contacto_centro')
 api.add_resource(OpcionesContacto_Config, '/api/w/opciones_contacto')
 
+if __name__ == "__main__":
+    app.run(debug=True)

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargar Excel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script> <!-- Asegúrate de incluir la librería para leer Excel -->
+</head>
+<body>
+
+    <h2>Sube tu archivo Excel</h2>
+
+    <!-- Formulario para subir el archivo Excel -->
+    <form id="uploadForm" enctype="multipart/form-data">
+        <label for="fileInput">Selecciona el archivo Excel:</label>
+        <input type="file" id="fileInput" name="file" accept=".xlsx" required>
+        <button type="submit">Subir archivo</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script>
+        // Obtener el formulario y el input de archivo
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const responseDiv = document.getElementById('response');
+
+        // Manejar el evento de envío del formulario
+        form.addEventListener('submit', function(event) {
+            event.preventDefault(); // Evitar el envío tradicional del formulario
+
+            // Crear un objeto FormData para enviar el archivo
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            // Crear el objeto JSON con los datos necesarios
+            const dataToSend = {
+                "nombre_tabla": "publicaciones",  // Este es el valor estático, siempre "publicaciones"
+                "registros": []  // Aquí irán los registros procesados desde el Excel
+            };
+
+            // Convertir los registros del archivo Excel a JSON y agregarlo al objeto
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const binaryData = e.target.result;
+                const workbook = XLSX.read(binaryData, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const records = XLSX.utils.sheet_to_json(sheet);
+
+                // Añadir los registros al objeto dataToSend
+                dataToSend.registros = records;
+
+            // Puedes cambiar esto por tu variable de entorno si estás usando algo como dotenv en el frontend con Vite, etc.
+             const API_BASE_URL = 'https://cedrus-database.onrender.com';
+
+                // Enviar la solicitud POST con el archivo Excel procesado
+                fetch(`${API_BASE_URL}/business/registers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',  // Aseguramos que el cuerpo sea JSON
+                    },
+                    body: JSON.stringify(dataToSend)  // Convertir el objeto a JSON
+                })
+                .then(response => response.json())  // Convertir la respuesta a JSON
+                .then(data => {
+                    // Mostrar la respuesta
+                    responseDiv.innerHTML = `
+                        <h3>Respuesta del servidor:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                })
+                .catch(error => {
+                    // Manejar errores
+                    responseDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+                });
+            };
+
+            reader.readAsBinaryString(file);  // Leer el archivo Excel como binario
+        });
+    </script>
+
+</body>
+</html>
+
+
+  
