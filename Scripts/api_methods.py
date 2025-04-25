@@ -227,7 +227,6 @@ class API_Methods:
                 - requests.Response | str : Objeto Response o "Failure to delete"
                 - dict | Exception        : JSON de respuesta o excepción
         """
-        # --- construir URL completa ---
         if self.url and not endpoint:
             endpoint = self.url
         elif not self.url and not endpoint:
@@ -238,7 +237,7 @@ class API_Methods:
         try:
             res = requests.delete(
                 endpoint,
-                data=json.dumps(data),    # ← se envía el JSON como en POST/PATCH
+                data=json.dumps(data),   
                 headers=headers
             )
             res.raise_for_status()
@@ -266,8 +265,6 @@ class API_Methods:
 
 
 
-
-# =============== USAGE ===============
 if __name__ == '__main__':
     os.system('clear') if platform.system() == 'Linux' else os.system('cls')
 
