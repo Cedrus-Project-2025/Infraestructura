@@ -38,7 +38,7 @@ class ChatbotResponse(Resource):
             )
 
             # Verifica usando el atributo status_code del objeto Response
-            if code.status_code != 201 or response.get("status") != "ok":
+            if code != "201" or response.get("status") != "ok":
                 return {
                     "status": "failed!",
                     "reason": "Respuesta inesperada del chatbot.",
