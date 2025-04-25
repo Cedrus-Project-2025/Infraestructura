@@ -85,7 +85,8 @@ class ObtenerConfigs(Resource):
             "proyectos_valores", "proyectos_mapa", "proyectos_mapa_locations",
             "proyectos_amenidades", "proyectos_amenidad_items",
             "proyectos_footer", "proyectos_footer_contacto",
-            "proyectos_footer_horarios"
+            "proyectos_footer_horarios","proyectos_diseno_materiales",
+            "proyectos_diseno_propuestas", "proyectos_diseno_caracteristicas",
         ]
         for nombre in nombres:
             code, response = self.api_base_datos.GET(
