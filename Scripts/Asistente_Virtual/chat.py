@@ -37,15 +37,42 @@ class ChatbotResponse(Resource):
                 data={"pregunta": pregunta}
             )
 
-            # Verifica usando el atributo status_code del objeto Response
-            if code != 201 or response.get("status") != "ok":
+            if isinstance(code, str) and code == "Failure to post":
                 return {
                     "status": "failed!",
-                    "reason": "Respuesta inesperada del chatbot.",
+                    "reason": "Error al conectar con el servicio de chatbot",
+                    "detalle": str(response)
+                }, 500
+                
+            if not (200 <= code.status_code < 300):
+                return {
+                    "status": "failed!",
+                    "reason": f"El servicio de chatbot respondió con código {code.status_code}",
+                    "detalle": response
+                }, code.status_code
+            
+            if response.get("status") != "ok":
+                return {
+                    "status": "failed!",
+                    "reason": "El chatbot respondió con un estado no válido",
                     "detalle": response
                 }, 400
 
-            respuesta = response.get("resultados", {}).get("respuesta")
+            resultados = response.get("resultados", {})
+            if not isinstance(resultados, dict):
+                return {
+                    "status": "failed!",
+                    "reason": "Estructura de respuesta inválida del chatbot",
+                    "detalle": response
+                }, 400
+                
+            respuesta = resultados.get("respuesta")
+            if not respuesta:
+                return {
+                    "status": "failed!",
+                    "reason": "No se encontró respuesta del chatbot",
+                    "detalle": response
+                }, 400
 
             # ===== Tiempo de fin y cálculo
             fin = time.time()
