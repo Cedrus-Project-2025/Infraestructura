@@ -208,58 +208,63 @@ class API_Methods:
 
             return "Failure to put", ex
 
-    def DELETE(self,endpoint:str = None, headers:dict = {"Content-Type": "application/json; charset=utf-8"}):
-        '''
+    def DELETE(
+        self,
+        endpoint: str = None,
+        data: dict = {},   # ← ahora acepta cuerpo JSON
+        headers: dict = {"Content-Type": "application/json; charset=utf-8"}
+    ):
+        """
         Envía una solicitud DELETE a un endpoint de la API.
 
-        ### Args:
-        * `endpoint` (str, opcional): El endpoint específico al cual enviar la solicitud. Por defecto es None.
-        * `headers` (dict, opcional): Los encabezados que se enviarán con la solicitud. Por defecto es `{"Content-Type": "application/json; charset=utf-8"}`.
+        Args:
+            endpoint (str, opcional): Ruta relativa o absoluta del endpoint.
+            data     (dict, opcional): Cuerpo JSON que se enviará.
+            headers  (dict, opcional): Encabezados HTTP.
 
-        ### Devuelve:
-        * tuple: Una tupla que contiene:
-            * `requests.Response`: El objeto de respuesta de la llamada a la API.
-            * dict: Los datos de respuesta JSON analizados (si tiene éxito).
-
-        ### Excepciones:
-        * Todos los errores encontrados durante las interacciones con la API se registran en `self.location_path/Files/Errors/API.json`.
-        '''
-        if self.url and not(endpoint): endpoint = self.url
-        elif not(self.url) and not(endpoint): raise AttributeError("Neither base URL nor endpoint given")
-        elif self.url and endpoint: endpoint = f"{self.url}{endpoint[1:] if endpoint[0] == '/' else endpoint}"
+        Returns:
+            tuple:
+                - requests.Response | str : Objeto Response o "Failure to delete"
+                - dict | Exception        : JSON de respuesta o excepción
+        """
+        if self.url and not endpoint:
+            endpoint = self.url
+        elif not self.url and not endpoint:
+            raise AttributeError("Neither base URL nor endpoint given")
+        elif self.url and endpoint:
+            endpoint = f"{self.url}{endpoint[1:] if endpoint[0] == '/' else endpoint}"
 
         try:
-            res = requests.delete(endpoint, headers=headers)
+            res = requests.delete(
+                endpoint,
+                data=json.dumps(data),   
+                headers=headers
+            )
             res.raise_for_status()
-            respuesta = res.json()
-            return res, respuesta
+            return res, res.json()
+
         except Exception as ex:
-            os.makedirs(os.path.join(self.location_path,'Files','Errors'),exist_ok=True)
-            errors_file_path = os.path.join(self.location_path,'Files','Errors','API.json')
-            if os.path.exists(errors_file_path):
-                file = json.loads(open(errors_file_path,'r').read())
-                file.append({
-                    "Datetime"  : datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "Method"    : "DELETE",
-                    "Exception" : str(ex),
-                    "Data Sent" : None
-                })
-                json.dump(file,open(errors_file_path,'w'))
+            # --- registrar error ---
+            os.makedirs(os.path.join(self.location_path, 'Files', 'Errors'), exist_ok=True)
+            err_file = os.path.join(self.location_path, 'Files', 'Errors', 'API.json')
+            registro = {
+                "Datetime":  datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "Method":    "DELETE",
+                "Exception": str(ex),
+                "Data Sent": data
+            }
+            if os.path.exists(err_file):
+                historico = json.loads(open(err_file, 'r').read())
+                historico.append(registro)
             else:
-                with open(errors_file_path,'w') as file:
-                    json.dump([{ 
-                        "Datetime"  : datetime.now().strftime("%Y-%m-%d %H:%M"),
-                        "Method"    : "DELETE",
-                        "Exception" : str(ex),
-                        "Data Sent" : None
-                    }],file)
+                historico = [registro]
+            json.dump(historico, open(err_file, 'w'))
 
             return "Failure to delete", ex
 
 
 
 
-# =============== USAGE ===============
 if __name__ == '__main__':
     os.system('clear') if platform.system() == 'Linux' else os.system('cls')
 
