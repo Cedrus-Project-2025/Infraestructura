@@ -1,177 +1,240 @@
-import os, json
+import os
 from flask import request
 from flask_restful import Resource
 from ..api_methods import API_Methods
 from dotenv import load_dotenv
-from urllib.parse import quote_plus
 
 load_dotenv()
 
+url_db = os.getenv("URL_DATABASE", "")
 
-# ─────────────────────────────
-# utilidades
-# ─────────────────────────────
-def filtrar_campos(
-    data,
-    campos_a_excluir=(
-        "id", "fecha_creacion", "fecha_modificacion", "es_visible",
-        "fecha_inicio", "fecha_fin", "orden", "icono", "color", "imagen",
-        "url", "es_activo", "proyecto_amenidades_id", "proyecto_footer_id",
-        "proyecto_id", "imagen_alt", "version", "boton_link", "boton_texto",
-        "proyecto_about_id", "map_id", "map_center", "map_zoom", "map_options",
-        "tiles_url", "tiles_attribution", "marker_icon", "polygon",
-        "zoom_control", "proyecto_mapa_id", "coords", "img", "link", "logo",
-        "imagen_principal", "estado", "copyright", "slug", "alt",
-        "enlace_titulo", "contacto_titulo", "horarios_titulo"
-    ),
-):
+def filtrar_campos(data, campos_a_excluir=("id", "fecha_creacion")):
+    """
+    Si 'data' es una lista de diccionarios, elimina de cada diccionario 
+    las claves que aparecen en 'campos_a_excluir'.
+    
+    Si 'data' es un diccionario único, elimina esas claves directamente.
+    """
     if isinstance(data, dict):
         return {k: v for k, v in data.items() if k not in campos_a_excluir}
-    if isinstance(data, list):
-        return [{k: v for k, v in item.items() if k not in campos_a_excluir} for item in data]
-    return data
+    elif isinstance(data, list):
+        return [
+            {k: v for k, v in item.items() if k not in campos_a_excluir}
+            for item in data
+        ]
+    else:
+        return data
+    
+# Función para construir el prompt 
+def build_prompt(configs:dict):
+
+    prompt_introduccion = configs.get("PROMPT_INTRODUCCION", "")
+    prompt_introduccion = prompt_introduccion.replace("{{insertar_name}}", configs.get("NAME", ""))#placeholders
+    prompt_introduccion = prompt_introduccion.replace("{{insertar_project}}", configs.get("PROJECT", ""))
+    prompt_introduccion = prompt_introduccion.replace("{{insertar_location}}", configs.get("LOCATION", ""))
+    prompt_introduccion = prompt_introduccion.replace("{{insertar_experience}}", configs.get("EXPERIENCE", ""))
+    prompt_introduccion = prompt_introduccion.replace("{{insertar_sector}}", configs.get("SECTOR", ""))
 
 
-def build_prompt(cfg: dict) -> str:
-    pi = cfg.get("PROMPT_INTRODUCCION", "")\
-         .replace("{{insertar_name}}", cfg.get("NAME", ""))\
-         .replace("{{insertar_project}}", cfg.get("PROJECT", ""))\
-         .replace("{{insertar_location}}", cfg.get("LOCATION", ""))\
-         .replace("{{insertar_experience}}", cfg.get("EXPERIENCE", ""))\
-         .replace("{{insertar_sector}}", cfg.get("SECTOR", ""))
+    prompt_personalidad = configs.get("PROMPT_PERSONALIDAD", "")
+    prompt_personalidad = prompt_personalidad.replace("{{insertar_phrase1}}", configs.get("PHRASE1", ""))
+    prompt_personalidad = prompt_personalidad.replace("{{insertar_phrase2}}", configs.get("PHRASE2", ""))
 
-    pp = cfg.get("PROMPT_PERSONALIDAD", "")\
-         .replace("{{insertar_phrase1}}", cfg.get("PHRASE1", ""))\
-         .replace("{{insertar_phrase2}}", cfg.get("PHRASE2", ""))
+    prompt_objetivos = configs.get("PROMPT_OBJETIVOS", "")
 
-    po = cfg.get("PROMPT_OBJETIVOS", "")
-
-    pl = cfg.get("PROMPT_LINEAMIENTOS", "")\
-         .replace("{{insertar_concise}}", cfg.get("CONCISE", ""))\
-         .replace("{{insertar_callaction}}", cfg.get("CALLACTION", ""))\
-         .replace("{{insertar_negation1}}", cfg.get("NEGATION1", ""))\
-         .replace("{{insertar_negation2}}", cfg.get("NEGATION2", ""))
-
-    pri = cfg.get("PROMPT_RESPUESTA_INDICACIONES", "")\
-          .replace("{{insertar_name}}", cfg.get("NAME", ""))\
-          .replace("{{insertar_project}}", cfg.get("PROJECT", ""))
-
-    return "\n\n".join([pi, pp, po, pl, pri])
+    prompt_lineamientos = configs.get("PROMPT_LINEAMIENTOS", "")
+    prompt_lineamientos = prompt_lineamientos.replace("{{insertar_concise}}", configs.get("CONCISE", ""))
+    prompt_lineamientos = prompt_lineamientos.replace("{{insertar_callaction}}", configs.get("CALLACTION", ""))
+    prompt_lineamientos = prompt_lineamientos.replace("{{insertar_negation1}}", configs.get("NEGATION1", ""))
+    prompt_lineamientos = prompt_lineamientos.replace("{{insertar_negation2}}", configs.get("NEGATION2", ""))
 
 
-class ObtenerConfigs(Resource):
-    """
-    /chat/configs  → GET, POST, PATCH, DELETE
-    """
+    prompt_resp_indicaciones = configs.get("PROMPT_RESPUESTA_INDICACIONES", "")
+    prompt_resp_indicaciones = prompt_resp_indicaciones.replace("{{insertar_name}}", configs.get("NAME", ""))
+    prompt_resp_indicaciones = prompt_resp_indicaciones.replace("{{insertar_project}}", configs.get("PROJECT", ""))
 
+    # Unificamos todas las secciones del prompt
+    prompt_final = "\n\n".join([
+        prompt_introduccion,
+        prompt_personalidad,
+        prompt_objetivos,
+        prompt_lineamientos,
+        prompt_resp_indicaciones
+    ])
+    return prompt_final
+
+'endpoint: /chat/configs'
+class Obtener_Configs(Resource):
     def __init__(self):
-        self.api_base_datos = API_Methods(url=os.getenv("URL_DATABASE", ""))
+        self.api_base_datos = API_Methods(url=url_db)
+        #self.api_chat = link_chatbot
 
-    # ---------- GET ----------
     def get(self):
-        # configuraciones ------------------------------------------------------
+
+        ##consulta a la base de datos
+        #Peticion para api_key
         code, response_key = self.api_base_datos.GET(
             endpoint="/chat/registers",
-            data={"nombre_tabla": "configuraciones"}
+            data = {"nombre_tabla": "configuraciones"
+            }
         )
-        if code == "Failure to get data" or "result" not in response_key:
-            return {"error": "Error al obtener configuraciones"}, 500
+        ''' response = {
+            "status: "fetched!",
+            "query": "SELECT FROM configuraciones",
+            "result": [
+                ("clave": "API_KEY", "valor": "123456789", "descripcion": "Clave de API"),
+        }
+        '''
+        if (code == "Failure to get data") or ("result" not in response_key):
+            return {"error": "Error al obtener la configuración"}, 500
 
-        configs = {r["clave"]: r["valor"] for r in response_key["result"]}
+        # Convertir la lista de registros en un diccionario
+        configs = {item["clave"]: item["valor"] for item in response_key["result"]}
 
-        # tablas de contexto ---------------------------------------------------
-        tablas, nombres = [], [
-            "proyectos", "proyectos_about", "proyectos_slides",
-            "proyectos_valores", "proyectos_mapa", "proyectos_mapa_locations",
-            "proyectos_amenidades", "proyectos_amenidad_items",
-            "proyectos_footer", "proyectos_footer_contacto",
-            "proyectos_footer_horarios","proyectos_diseno_materiales",
-            "proyectos_diseno_propuestas", "proyectos_diseno_caracteristicas",
-        ]
-        for nombre in nombres:
-            code, response = self.api_base_datos.GET(
-                endpoint="/web/registers",
-                data={"nombre_tabla": nombre}
-            )
-            filas = filtrar_campos(response["result"]) \
-                    if code != "Failure to get data" and "result" in response else []
-            tablas.append({"nombre": nombre, "filas": filas})
+        
 
+        # ----- Parte 2: Obtener la tabla de contexto -----
+
+        #Peticion tablas para contexto
+        code, response_proyectos = self.api_base_datos.GET(
+            endpoint="/web/registers",
+            data = {"nombre_tabla": "proyectos"}
+        )
+        ''' response_proyecto = {
+                    "status: "fetched!",
+                    "query": "SELECT FROM proyectos",
+                    "result": [
+                        ("título": "vhgvg", "descripcion": "erfer", "icono": "vdfvdf", "imagen": "vdfcvdf", "alt_text": "vdrg", "orden": "vdfvsdf"),
+        '''
+        if (code == "Failure to get data") or ("result" not in response_proyectos):
+            proyectos = []
+        else:
+            proyectos = filtrar_campos(response_proyectos["result"], ("id", "fecha_creacion"))
+
+        # ------------------- Selección de respuesta según el parámetro "modo" -------------------
+        # Leer el parámetro "modo" desde la query string
         modo = request.args.get("modo")
         if modo == "apikey":
-            return (
-                {"error": "No se encontró la API_KEY"}, 404
-                if "API_KEY" not in configs else
-                {"api_key": configs["API_KEY"]}, 200
-            )
-        if modo == "prompt":
+            if "API_KEY" not in configs:
+                return {"error": "No se encontró la API_KEY"}, 404
+            return {"api_key": configs["API_KEY"]}, 200
+        elif modo == "prompt":
             return {"prompt": build_prompt(configs)}, 200
-        if modo == "tablas":
-            return {"tablas": tablas}, 200
+        elif modo == "proyectos":
+            return {"proyectos": proyectos}, 200
+        else:
+            # Si no se especifica "modo", se devuelven ambos: API_KEY, prompt y la tabla de amenidades
+            result_data = {}
+            if "API_KEY" in configs:
+                result_data["api_key"] = configs["API_KEY"]
+            result_data["prompt"] = build_prompt(configs)
+            result_data["proyectos"] = proyectos
+            return result_data, 200
 
-        return {
-            "api_key": configs.get("API_KEY"),
-            "prompt":  build_prompt(configs),
-            "tablas":  tablas
-        }, 200
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+''''
+from flask import request
+from flask_restful import Resource
+from ..Database.manager import DatabaseManager
+
+db = DatabaseManager()
+
+class Chatbot_Config(Resource):
+
+    def get(self):
+        try:
+            query = "SELECT clave, valor, descripcion FROM configuraciones" #configuraciones 
+            resultados = db.fetch_all(query)
+            configs = [
+                {"clave": clave, "valor": valor, "descripcion": descripcion}
+                for clave, valor, descripcion in resultados
+            ]
+            return {"status": "fetched!", "configs": configs}, 200
+        except Exception as ex:
+            return {"status": "failed!", "reason": str(ex)}, 500
 
     def post(self):
-        data = request.get_json(force=True) or {}
-        registros = data.get("registros")
-        if not registros:
-            return {"error": "No se proporcionaron registros."}, 400
-        if any(not r.get("clave") or not r.get("valor") for r in registros):
-            return {"error": "Cada registro requiere 'clave' y 'valor'."}, 400
+        try:
+            data = request.json
+            clave = data.get("clave")
+            valor = data.get("valor")
+            descripcion = data.get("descripcion", "") #Recibe la configuración
 
-        code, response = self.api_base_datos.POST(
-            endpoint="/chat/registers",
-            data={
-                "nombre_tabla": "configuraciones",
-                "registros":   registros
-            }
-        )
-        if code == "Failure to post":
-            return {"status": "failed", "reason": str(response)}, 500
-        return {"status": "created"}, 201
+            if not clave or not valor:
+                raise RuntimeError("Faltan campos obligatorios: 'clave' y 'valor'.")
 
-    # ---------- PATCH ----------
+                    # Verifica si ya existe esa clave
+            query_check = "SELECT 1 FROM configuraciones WHERE clave = ?"
+            existente = db.fetch_all(query_check, (clave,))
+            if existente:
+                return {
+                    "status": "failed!",
+                    "reason": f"La clave '{clave}' ya existe. Usa PATCH para actualizarla."
+                }, 409
+
+            query = "INSERT INTO configuraciones (clave, valor, descripcion) VALUES (?, ?, ?)"
+            db.execute_query(query, (clave, valor, descripcion))
+
+            return {"status": "created!", "clave": clave}, 201
+        except Exception as ex:
+            return {"status": "failed!", "reason": str(ex)}, 500
+
     def patch(self):
-        data = request.get_json(force=True) or {}
-        if not data.get("cambios") or not data.get("condiciones"):
-            return {"error": "Se requieren 'cambios' y 'condiciones'."}, 400
-        if not data["condiciones"].strip().lower().startswith("where"):
-            return {"error": "Las condiciones deben iniciar con WHERE."}, 400
+        try:
+            data = request.json
+            clave = data.get("clave")
+            nuevo_valor = data.get("valor")
 
-        code, response = self.api_base_datos.PATCH(
-            endpoint="/chat/registers",
-            data={
-                "nombre_tabla": data.get("nombre_tabla", "configuraciones"),
-                "cambios":      data["cambios"],
-                "condiciones":  data["condiciones"]
-            }
-        )
-        if code == "Failure to patch":
-            return {"status": "failed", "reason": str(response)}, 500
-        return {"status": "updated"}, 200
+            if not clave or nuevo_valor is None:
+                raise RuntimeError("Se requiere 'clave' y nuevo 'valor'.")
 
-    # ---------- DELETE  ----------
+            query = "UPDATE configuraciones SET valor = ? WHERE clave = ?"
+            db.execute_query(query, (nuevo_valor, clave))
+
+            return {"status": "updated!", "clave": clave, "nuevo_valor": nuevo_valor}, 200
+        except Exception as ex:
+            return {"status": "failed!", "reason": str(ex)}, 500
+
     def delete(self):
-        data = request.get_json(force=True) or {}
-        condiciones = data.get("condiciones")
+        try:
+            data = request.json
+            clave = data.get("clave")
+            if not clave:
+                raise RuntimeError("Se requiere la 'clave' a eliminar.")
 
-        if not condiciones or not condiciones.strip().lower().startswith("where"):
-            return {"error": "Se requieren 'condiciones' que inicien con WHERE."}, 400
+            query = "DELETE FROM configuraciones WHERE clave = ?"
+            db.execute_query(query, (clave,))
+            return {"status": "deleted!", "clave": clave}, 200
+        except Exception as ex:
+            return {"status": "failed!", "reason": str(ex)}, 500
 
-        code, response = self.api_base_datos.DELETE(
-            endpoint="/chat/registers",
-            data={
-                "nombre_tabla": data.get("nombre_tabla", "configuraciones"),
-                "condiciones":  condiciones
-            }
-        )
-
-        if code == "Failure to delete" or code.status_code >= 400:
-            current_app.logger.error(f"Remote DELETE error: {response}")
-            return {"status": "failed", "reason": str(response)}, 500
-
-        return {"status": "deleted"}, 200
+'''
