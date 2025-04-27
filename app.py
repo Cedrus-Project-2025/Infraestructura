@@ -36,8 +36,10 @@ api.add_resource(AudienciaAPI,     '/api/b/audiencia')
 
 # ===== Endpoints Web
 from Scripts.Desarrollo_Web.general import ObtenerConfigsGeneral
+from Scripts.Desarrollo_Web.proyectos    import ObtenerConfigsProyectos
 
-api.add_resource(ObtenerConfigsGeneral,     '/api/w/general')
+api.add_resource(ObtenerConfigsGeneral, '/api/w/general')
+api.add_resource(ObtenerConfigsProyectos, '/api/w/proyectos')
 
 
 if __name__ == '__main__':
