@@ -15,11 +15,11 @@ api = Api(app)
 
 
 # ===== Endpoints Asistente Virtual
-from Scripts.Asistente_Virtual.chat    import Chatbot_Response
-from Scripts.Asistente_Virtual.configs import Obtener_Configs
+from Scripts.Asistente_Virtual.chat    import ChatbotResponse
+from Scripts.Asistente_Virtual.configs import ObtenerConfigs
 
-api.add_resource(Chatbot_Response, "/api/a/chat")
-api.add_resource(Obtener_Configs,  "/api/a/configs")
+api.add_resource(ChatbotResponse, "/api/a/chat")
+api.add_resource(ObtenerConfigs,  "/api/a/configs")
 
 
 
