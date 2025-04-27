@@ -3,43 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cargar Excel</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script> <!-- Asegúrate de incluir la librería para leer Excel -->
+    <title>Administrar Publicaciones</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
 </head>
 <body>
 
-    <h2>Sube tu archivo Excel</h2>
+    <h2>Sube tu archivo Excel (POST)</h2>
 
-    <!-- Formulario para subir el archivo Excel -->
     <form id="uploadForm" enctype="multipart/form-data">
-        <label for="fileInput">Selecciona el archivo Excel:</label>
         <input type="file" id="fileInput" name="file" accept=".xlsx" required>
         <button type="submit">Subir archivo</button>
+    </form>
+
+    <h2>Consultar publicaciones (GET)</h2>
+    <form id="getForm">
+        <label for="columnas">Columnas (separadas por coma):</label>
+        <input type="text" id="columnas" placeholder="id,post_id,reactions">
+        
+        <label for="condicion">Condición:</label>
+        <input type="text" id="condicion" placeholder="WHERE reactions > 0">
+        
+        <label for="registros">Cantidad de registros:</label>
+        <input type="number" id="registros" value="5">
+        
+        <button type="submit">Consultar</button>
+    </form>
+
+    <h2>Eliminar publicación (DELETE)</h2>
+    <form id="deleteForm">
+        <label for="deleteCampo">Campo:</label>
+        <input type="text" id="deleteCampo" name="campo" required>
+        <label for="deleteValor">Valor:</label>
+        <input type="text" id="deleteValor" name="valor" required>
+        <button type="submit">Eliminar</button>
     </form>
 
     <div id="response"></div>
 
     <script>
-        // Obtener el formulario y el input de archivo
-        const form = document.getElementById('uploadForm');
-        const fileInput = document.getElementById('fileInput');
+        const API_BASE_URL = 'https://cedrus-database.onrender.com';
         const responseDiv = document.getElementById('response');
 
-        // Manejar el evento de envío del formulario
-        form.addEventListener('submit', function(event) {
-            event.preventDefault(); // Evitar el envío tradicional del formulario
+        // --- POST ---
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
 
-            // Crear un objeto FormData para enviar el archivo
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
 
-            // Crear el objeto JSON con los datos necesarios
-            const dataToSend = {
-                "nombre_tabla": "publicaciones",  // Este es el valor estático, siempre "publicaciones"
-                "registros": []  // Aquí irán los registros procesados desde el Excel
-            };
-
-            // Convertir los registros del archivo Excel a JSON y agregarlo al objeto
             const file = fileInput.files[0];
             const reader = new FileReader();
 
@@ -50,40 +61,133 @@
                 const sheet = workbook.Sheets[sheetName];
                 const records = XLSX.utils.sheet_to_json(sheet);
 
-                // Añadir los registros al objeto dataToSend
-                dataToSend.registros = records;
+                const mapeoColumnas = {
+                    "Post ID": "post_id",
+                    "Page ID": "page_id",
+                    "Page name": "page_name",
+                    "Title": "title",
+                    "Description": "description",
+                    "Duration (sec)": "duration_sec",
+                    "Publish time": "publish_time",
+                    "Caption type": "caption_type",
+                    "Permalink": "permalink",
+                    "Is crosspost": "is_crosspost",
+                    "Is share": "is_share",
+                    "Post type": "post_type",
+                    "Languages": "languages",
+                    "Custom labels": "custom_labels",
+                    "Funded content status": "funded_content_status",
+                    "Data comment": "data_comment",
+                    "Date": "date",
+                    "Views": "views",
+                    "Reach": "reach",
+                    "Reactions": "reactions",
+                    "Comments": "comments",
+                    "Shares": "shares",
+                    "Total clicks": "total_clicks",
+                    "Other Clicks": "other_clicks",
+                    "Link Clicks": "link_clicks",
+                    "Matched Audience Targeting Consumption (Photo Click)": "matc_pc",
+                    "Seconds viewed": "seconds_viewed",
+                    "Average Seconds viewed": "average_seconds_viewed",
+                    "Estimated earnings (USD)": "estimated_earnings_usd",
+                    "Ad CPM (USD)": "ad_cpm_usd",
+                    "Ad impressions": "ad_impressions"
+                };
 
-            // Puedes cambiar esto por tu variable de entorno si estás usando algo como dotenv en el frontend con Vite, etc.
-             const API_BASE_URL = 'url base de datos';
+                const registrosNormalizados = records.map(record => {
+                    const nuevoRegistro = {};
+                    for (const key in record) {
+                        if (key === "Reactions, Comments and Shares") {
+                            continue;
+                        }
+                        nuevoRegistro[mapeoColumnas[key] || key] = record[key];
+                    }
+                    return nuevoRegistro;
+                });
 
-                // Enviar la solicitud POST con el archivo Excel procesado
+                const dataToSend = {
+                    "nombre_tabla": "publicaciones",  // Nombre de la tabla
+                    "registros": registrosNormalizados  // Enviar registros
+                };
+
                 fetch(`${API_BASE_URL}/business/registers`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',  // Aseguramos que el cuerpo sea JSON
-                    },
-                    body: JSON.stringify(dataToSend)  // Convertir el objeto a JSON
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToSend)
                 })
-                .then(response => response.json())  // Convertir la respuesta a JSON
+                .then(response => response.json())
                 .then(data => {
-                    // Mostrar la respuesta
-                    responseDiv.innerHTML = `
-                        <h3>Respuesta del servidor:</h3>
-                        <pre>${JSON.stringify(data, null, 2)}</pre>
-                    `;
+                    responseDiv.innerHTML = `<h3>Respuesta del servidor:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
                 })
                 .catch(error => {
-                    // Manejar errores
                     responseDiv.innerHTML = `<p>Error: ${error.message}</p>`;
                 });
             };
 
-            reader.readAsBinaryString(file);  // Leer el archivo Excel como binario
+            reader.readAsBinaryString(file);
+        });
+
+        // --- GET ---
+        const getForm = document.getElementById('getForm');
+
+        getForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const columnas = document.getElementById('columnas').value;
+            const condicion = document.getElementById('condicion').value;
+            const registros = parseInt(document.getElementById('registros').value);
+
+            // Construir la URL con los parámetros de la consulta
+            const url = new URL(`${API_BASE_URL}/business/registers`);
+            const params = new URLSearchParams();
+
+            // Añadir los parámetros a la URL
+            params.append("nombre_tabla", "publicaciones");
+            params.append("columnas", columnas);
+            params.append("condiciones", condicion);
+            params.append("tipo_orden", JSON.stringify({ "id": "desc" }));
+            params.append("registros", registros);
+
+            // Adjuntar los parámetros a la URL
+            url.search = params.toString();
+
+            // Realizar la solicitud GET
+            fetch(url, {
+                method: 'GET',  // Usar GET ya que estamos solo consultando datos
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                responseDiv.innerHTML = `<h3>Resultados de la consulta:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            })
+            .catch(error => {
+                responseDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            });
+        });
+
+
+        // --- DELETE ---
+        const deleteForm = document.getElementById('deleteForm');
+
+        deleteForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const campo = document.getElementById('deleteCampo').value;
+            const valor = document.getElementById('deleteValor').value;
+
+            fetch(`${API_BASE_URL}/business/registers?campo=${campo}&valor=${valor}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => {
+                responseDiv.innerHTML = `<h3>Resultado del DELETE:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            })
+            .catch(error => {
+                responseDiv.innerHTML = `<p>Error en DELETE: ${error.message}</p>`;
+            });
         });
     </script>
 
 </body>
 </html>
-
-
-  

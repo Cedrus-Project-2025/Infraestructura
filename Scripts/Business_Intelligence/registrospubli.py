@@ -20,52 +20,36 @@ class Publicaciones(Resource):
 
     def get(self):
         try:
-            payload = request.json if request.is_json else {}
+            # Leer parámetros de la URL
+            columnas = request.args.get("columnas")
+            condicion = request.args.get("condicion")
+            registros = request.args.get("registros", 10)  # Por defecto 10
 
+            # Si no pasan columnas, ponemos columnas por default
             allowed_fields = [
-                "id", "fecha", "alcance_total", "impresiones", "interacciones", "clics_en_enlace",
-                "reacciones", "comentarios", "compartidos", "cpc_mxn", "tasa_de_conversion",
-                "gasto_publicitario_mxn", "seguidores_nuevos", "total_de_seguidores"
+                "id", "post_id", "page_id", "page_name", "title", "description", "duration_sec",
+                "publish_time", "caption_type", "permalink", "is_crosspost", "is_share",
+                "post_type", "languages", "custom_labels", "funded_content_status", "data_comment", "date",
+                "views", "reach", "reactions_comments_shares", "reactions", "comments", "shares",
+                "total_clicks", "other_clicks", "link_clicks", "matc_pc", "seconds_viewed", "average_seconds_viewed", 
+                "estimated_earnings_usd", "ad_cpm_usd", "ad_impressions"
             ]
 
-            filters = []
+            columnas_list = columnas.split(",") if columnas else allowed_fields
 
-            # Filtrado por ID (lista o entero)
-            ids = payload.get("id")
-            if ids is not None:
-                if isinstance(ids, int):
-                    ids = [ids]
-                elif not isinstance(ids, list):
-                    return {"error": "El campo 'id' debe ser un entero o una lista."}, 400
-                filters.append(f"id IN ({','.join(map(str, ids))})")
+            # Condiciones
+            condiciones = [f"WHERE {condicion}"] if condicion else []
 
-            # Otros filtros
-            for field, value in payload.items():
-                if field == "id" or field not in allowed_fields:
-                    continue
-
-                if isinstance(value, (int, float)):
-                    filters.append(f"{field} = {value}")
-                elif isinstance(value, str):
-                    match = re.match(r"^(<=|>=|=|<|>)(\d+(\.\d+)?)$", value)
-                    if match:
-                        operator, num_value, _ = match.groups()
-                        filters.append(f"{field} {operator} {num_value}")
-                    elif value.isdigit():
-                        filters.append(f"{field} = {int(value)}")
-                    else:
-                        return {"error": f"Formato inválido para '{field}'. Usa operadores como >1000 o <=500."}, 400
-
-            condiciones = f"WHERE {' AND '.join(filters)}" if filters else None
-
+            # Armar payload para la API
             data = {
                 "nombre_tabla": "publicaciones",
-                "columnas": allowed_fields,
-                "condiciones": [condiciones] if condiciones else [],
-                "tipo_orden": {"fecha": "desc"},
-                "registros": 10
+                "columnas": columnas_list,
+                "condiciones": condiciones,
+                "tipo_orden": {"id": "desc"},  # Ordenamos por ID descendente
+                "registros": int(registros)
             }
 
+            # Llamada a la API
             code, response = self.api.GET(
                 endpoint="/business/registers",
                 data=data
@@ -76,57 +60,77 @@ class Publicaciones(Resource):
         except Exception as e:
             return {"error": f"Error en el GET: {str(e)}"}, 500
 
+
     def post(self):
         try:
-            # Verificar si el archivo está en la solicitud
-            if 'file' in request.files:
-                file = request.files['file']
+            # Leer el cuerpo JSON de la solicitud
+            data = request.get_json()
 
-                if file and file.filename.endswith('.xlsx'):
-                    # Leer el archivo Excel con pandas
-                    try:
-                        df = pd.read_excel(file)
-                    except Exception as e:
-                        print(f"Error al leer el archivo Excel: {e}")
-                        return {"error": f"Error al leer el archivo Excel: {e}"}, 500
+            nombre_tabla = data.get('nombre_tabla')
+            registros = data.get('registros')
 
-                    # Procesar el archivo Excel (por ejemplo, convertir las filas en registros)
-                    registros = []
-                    for _, row in df.iterrows():
-                        try:
-                            registros.append({
-                                "fecha": row["fecha"].strftime("%Y-%m-%d"),  # Formatear la fecha
-                                "alcance_total": row["alcance_total"],
-                                "impresiones": row["impresiones"],
-                                "interacciones": row["interacciones"],
-                                "clics_en_enlace": row["clics_en_enlace"],
-                                "reacciones": row["reacciones"],
-                                "comentarios": row["comentarios"],
-                                "compartidos": row["compartidos"],
-                                "cpc_mxn": row["cpc_mxn"],
-                                "tasa_de_conversion": row["tasa_de_conversion"],
-                                "gasto_publicitario_mxn": row["gasto_publicitario_mxn"],
-                                "seguidores_nuevos": row["seguidores_nuevos"],
-                                "total_de_seguidores": row["total_de_seguidores"]
-                            })
-                        except Exception as e:
-                            print(f"Error procesando la fila {row}: {e}")
-                            return {"error": f"Error procesando la fila {row}: {e}"}, 500
+            if not nombre_tabla or not registros:
+                return {"error": "Faltan 'nombre_tabla' o 'registros'."}, 400
 
-                    # Crear la conexión a la base de datos usando SQLAlchemy
-                    engine = create_engine(API_URL)
+            # Crear un DataFrame desde los registros
+            df = pd.DataFrame(registros)
 
-                    # Insertar los registros en la base de datos
-                    try:
-                        df_to_insert = pd.DataFrame(registros)
-                        df_to_insert.to_sql("publicaciones", con=engine, if_exists='append', index=False)
-                        return {"message": "Datos insertados exitosamente en la base de datos"}, 200
-                    except Exception as e:
-                        print(f"Error al insertar los datos en la base de datos: {e}")
-                        return {"error": f"Error al insertar los datos en la base de datos: {e}"}, 500
+            # Mapeo de columnas del Excel al nombre de base de datos
+            mapeo_columnas = {
+                "Post ID": "post_id",
+                "Page ID": "page_id",
+                "Page name": "page_name",
+                "Title": "title",
+                "Description": "description",
+                "Duration (sec)": "duration_sec",
+                "Publish time": "publish_time",
+                "Caption type": "caption_type",
+                "Permalink": "permalink",
+                "Is crosspost": "is_crosspost",
+                "Is share": "is_share",
+                "Post type": "post_type",
+                "Languages": "languages",
+                "Custom labels": "custom_labels",
+                "Funded content status": "funded_content_status",
+                "Data comment": "data_comment",
+                "Date": "date",
+                "Views": "views",
+                "Reach": "reach",
+                "Reactions": "reactions",
+                "Comments": "comments",
+                "Shares": "shares",
+                "Total clicks": "total_clicks",
+                "Other Clicks": "other_clicks",
+                "Link Clicks": "link_clicks",
+                "Matched Audience Targeting Consumption (Photo Click)": "matc_pc",
+                "Seconds viewed": "seconds_viewed",
+                "Average Seconds viewed": "average_seconds_viewed",
+                "Estimated earnings (USD)": "estimated_earnings_usd",
+                "Ad CPM (USD)": "ad_cpm_usd",
+                "Ad impressions": "ad_impressions"
+            }
+
+            # Aplicar el mapeo solo si alguna columna del mapeo existe en el DataFrame
+            columnas_presentes = [col for col in mapeo_columnas.keys() if col in df.columns]
+            if columnas_presentes:
+                df.rename(columns={col: mapeo_columnas[col] for col in columnas_presentes}, inplace=True)
+
+            # Filtrar para dejar solo columnas válidas (por si trae columnas basura)
+            columnas_validas = list(mapeo_columnas.values())
+            df = df[[col for col in columnas_validas if col in df.columns]]
+
+            # Crear conexión a la base de datos
+            engine = create_engine(API_URL)
+
+            # Insertar los datos
+            df.to_sql(nombre_tabla, con=engine, if_exists='append', index=False)
+
+            return {"message": "Datos insertados exitosamente en la base de datos"}, 200
 
         except Exception as e:
             return {"error": str(e)}, 500
+
+
 
 
     def delete(self):
