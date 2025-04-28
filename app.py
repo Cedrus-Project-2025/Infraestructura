@@ -28,8 +28,8 @@ api.add_resource(Obtener_Configs,  "/api/a/configs")
 from Scripts.Business_Intelligence.registrospubli import Publicaciones
 from Scripts.Business_Intelligence.registrosaudi  import AudienciaAPI
 
-api.add_resource(Publicaciones, '/business/registers')
-api.add_resource(AudienciaAPI,     '/business/registers')
+api.add_resource(Publicaciones,    '/api/b/publicaciones')
+api.add_resource(AudienciaAPI,     '/api/b/audiencia')
 
 
 

@@ -5,8 +5,8 @@ import time
 import os
 import traceback
 import re
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
 from ..api_methods import API_Methods
 
 # Cargar las variables del archivo .env
@@ -17,48 +17,84 @@ API_URL = os.getenv("API_BASE_URL")
 class Publicaciones(Resource):
     def __init__(self):
         self.api = API_Methods(url=API_URL)
+        self.allowed_fields = [
+            "post_id", "page_id", "page_name", "title", "description", "duration_sec",
+            "publish_time", "caption_type", "permalink", "is_crosspost", "is_share",
+            "post_type", "languages", "custom_labels", "funded_content_status", "data_comment", "date",
+            "views", "reach", "reactions_comments_shares", "reactions", "comments", "shares",
+            "total_clicks", "other_clicks", "link_clicks", "matc_pc", "seconds_viewed", "average_seconds_viewed",
+            "estimated_earnings_usd", "ad_cpm_usd", "ad_impressions"
+        ]
 
     def get(self):
+        """
+        Método GET para obtener datos de la tabla publicaciones
+        
+        Parámetros opcionales:
+        - id: Filtrar por id específico
+        - post_id: Filtrar por post_id
+        - page_id: Filtrar por page_id
+        - post_type: Filtrar por tipo de publicación
+        - date_from: Filtrar desde una fecha (formato YYYY-MM-DD)
+        - date_to: Filtrar hasta una fecha (formato YYYY-MM-DD)
+        - fields: Campos específicos a devolver (separados por comas)
+        - limit: Límite de registros a devolver
+        - offset: Número de registros a omitir
+        - sort_by: Campo por el cual ordenar
+        - sort_dir: Dirección de ordenamiento (asc/desc)
+        
+        Retorna:
+        - JSON con los datos de publicaciones
+        """
         try:
-            # Leer parámetros de la URL
-            columnas = request.args.get("columnas")
-            condicion = request.args.get("condicion")
-            registros = request.args.get("registros", 10)  # Por defecto 10
+            # Construir endpoint para la solicitud
+            endpoint = "/business/registers"
+            
+            # Obtener parámetros de la solicitud
+            params = {}
+            for key in request.args:
+                params[key] = request.args.get(key)
 
-            # Si no pasan columnas, ponemos columnas por default
-            allowed_fields = [
-                "id", "post_id", "page_id", "page_name", "title", "description", "duration_sec",
-                "publish_time", "caption_type", "permalink", "is_crosspost", "is_share",
-                "post_type", "languages", "custom_labels", "funded_content_status", "data_comment", "date",
-                "views", "reach", "reactions_comments_shares", "reactions", "comments", "shares",
-                "total_clicks", "other_clicks", "link_clicks", "matc_pc", "seconds_viewed", "average_seconds_viewed", 
-                "estimated_earnings_usd", "ad_cpm_usd", "ad_impressions"
-            ]
+            # Asegurar que siempre se mande el nombre de la tabla
+            params.setdefault('nombre_tabla', 'publicaciones')
 
-            columnas_list = columnas.split(",") if columnas else allowed_fields
-
-            # Condiciones
-            condiciones = [f"WHERE {condicion}"] if condicion else []
-
-            # Armar payload para la API
-            data = {
-                "nombre_tabla": "publicaciones",
-                "columnas": columnas_list,
-                "condiciones": condiciones,
-                "tipo_orden": {"id": "desc"},  # Ordenamos por ID descendente
-                "registros": int(registros)
-            }
-
-            # Llamada a la API
-            code, response = self.api.GET(
-                endpoint="/business/registers",
-                data=data
-            )
-
-            return response, code
-
+            
+            # Realizar solicitud GET a la API
+            print(f"Parámetros enviados a la API externa: {params}")
+            response, data = self.api.GET(endpoint, data=params)
+            
+            # Verificar si la respuesta es exitosa
+            if response == "Failure to get data":
+                return {
+                    "status": "error",
+                    "message": f"Error al obtener datos de publicaciones: {str(data)}",
+                    "trace": traceback.format_exc()
+                }, 500
+            
+            # Verificar si la respuesta es un objeto Response válido
+            if not hasattr(response, 'status_code'):
+                return {
+                    "status": "error",
+                    "message": "Respuesta inválida del servidor",
+                    "trace": "No se recibió un objeto Response válido"
+                }, 500
+            
+            # Formatear la respuesta
+            return {
+                "status": "success",
+                "data": data,
+                "message": "Datos de publicaciones obtenidos correctamente"
+            }, response.status_code
+            
         except Exception as e:
-            return {"error": f"Error en el GET: {str(e)}"}, 500
+            error_msg = str(e)
+            traceback_str = traceback.format_exc()
+            
+            return {
+                "status": "error",
+                "message": f"Error al obtener datos de publicaciones: {error_msg}",
+                "trace": traceback_str
+            }, 500
 
 
     def post(self):
@@ -132,30 +168,45 @@ class Publicaciones(Resource):
 
 
 
-
     def delete(self):
+        """
+        Método DELETE para eliminar publicaciones con condiciones personalizadas.
+        
+        El cuerpo de la solicitud debe contener:
+        {
+            "nombre_tabla": "publicaciones",
+            "condiciones": "WHERE reactions > 0"
+        }
+        """
         try:
-            campo = request.args.get("campo")
-            valor = request.args.get("valor")
+            # Obtener los datos del cuerpo de la solicitud
+            body_data = request.get_json()
 
-            if not campo or not valor:
-                return {"error": "Falta 'campo' o 'valor'"}, 400
+            # Verificar que 'condiciones' esté presente
+            if not body_data.get('condiciones'):
+                return {"status": "error", "message": "'condiciones' es un parámetro obligatorio"}, 400
 
-            condiciones = f"WHERE {campo} = '{valor}'"
+            # Configurar el endpoint
+            endpoint = "/business/registers"
 
-            data = {
-                "nombre_tabla": "publicaciones",
-                "condiciones": condiciones
-            }
+            # Enviar solicitud DELETE a la API con los datos (nombre_tabla y condiciones)
+            response, data_response = self.api.DELETE(endpoint=endpoint, data=body_data)
 
-            code, response = self.api.DELETE(
-                endpoint="/business/registers",
-                data=data
-            )
+            # Verificar si la respuesta fue exitosa
+            if response == "Failure to delete":
+                return {"status": "error", "message": f"Error al eliminar la publicación: {data_response}"}, 500
 
-            return response, code
+            return {
+                "status": "success",
+                "message": "Publicaciones eliminadas correctamente",
+                "data": data_response
+            }, 200
 
         except Exception as e:
-            print(f"Error en el DELETE: {e}")
-            print("Traceback completo:", traceback.format_exc())
-            return {"error": f"Error en el DELETE: {str(e)}"}, 500
+            error_msg = str(e)
+            traceback_str = traceback.format_exc()
+            return {
+                "status": "error",
+                "message": f"Error al eliminar publicaciones: {error_msg}",
+                "trace": traceback_str
+            }, 500
