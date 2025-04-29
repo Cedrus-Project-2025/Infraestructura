@@ -10,7 +10,7 @@ from ..api_methods import API_Methods
 # Cargar las variables del archivo .env
 load_dotenv()
 
-API_URL = os.getenv("API_BASE_URL")
+API_URL = os.getenv("URL_DATABASE")
 
 class Publicaciones(Resource):
     def __init__(self):
