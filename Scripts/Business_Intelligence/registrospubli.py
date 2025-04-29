@@ -1,140 +1,220 @@
-from flask_restful import Resource, request
+from flask import request
+from flask_restful import Resource
+import pandas as pd
 import time
-import re
 import os
+import traceback
+import re
+from sqlalchemy import create_engine
 from dotenv import load_dotenv
-
 from ..api_methods import API_Methods
 
-load_dotenv()  # Esto busca el archivo .env y carga las variables
+# Cargar las variables del archivo .env
+load_dotenv()
 
 API_URL = os.getenv("API_BASE_URL")
 
-class PublicacionesAPI(Resource):
+class Publicaciones(Resource):
     def __init__(self):
         self.api = API_Methods(url=API_URL)
+        self.allowed_fields = [
+            "post_id", "page_id", "page_name", "title", "description", "duration_sec",
+            "publish_time", "caption_type", "permalink", "is_crosspost", "is_share",
+            "post_type", "languages", "custom_labels", "funded_content_status", "data_comment", "date",
+            "views", "reach", "reactions_comments_shares", "reactions", "comments", "shares",
+            "total_clicks", "other_clicks", "link_clicks", "matc_pc", "seconds_viewed", "average_seconds_viewed",
+            "estimated_earnings_usd", "ad_cpm_usd", "ad_impressions"
+        ]
 
     def get(self):
+        """
+        Método GET para obtener datos de la tabla publicaciones.
+
+        Puedes aplicar filtros, seleccionar campos específicos y paginar los resultados.
+
+        Parámetros opcionales (en la URL como query params):
+        - post_id: Filtrar por el ID de la publicación.
+        - page_id: Filtrar por el ID de la página.
+        - page_name: Filtrar por el nombre de la página.
+        - title: Filtrar por el título de la publicación.
+        - description: Filtrar por la descripción.
+        - publish_time: Filtrar por hora de publicación exacta (YYYY-MM-DD HH:MM:SS).
+        - post_type: Filtrar por el tipo de publicación (ej. video, photo, link, etc.).
+        - languages: Filtrar por idiomas usados en la publicación.
+        - date: Filtrar por fecha exacta (YYYY-MM-DD).
+        - date_from: Filtrar desde una fecha (YYYY-MM-DD).
+        - date_to: Filtrar hasta una fecha (YYYY-MM-DD).
+        - fields: Campos específicos a devolver, separados por comas (ej. post_id,page_name,views).
+        - limit: Número máximo de registros a devolver.
+        - offset: Número de registros a omitir desde el inicio.
+        - sort_by: Campo por el cual ordenar los resultados.
+        - sort_dir: Dirección de ordenamiento: 'asc' para ascendente, 'desc' para descendente.
+
+        Retorna:
+        - JSON con los datos de publicaciones filtrados y estructurados.
+        """
+
         try:
-            payload = request.json if request.is_json else {}
+            # Construir endpoint para la solicitud
+            endpoint = "/business/registers"
+            
+            # Obtener parámetros de la solicitud
+            params = {}
+            for key in request.args:
+                params[key] = request.args.get(key)
 
-            allowed_fields = [
-                "id", "fecha", "alcance_total", "impresiones", "interacciones", "clics_en_enlace",
-                "reacciones", "comentarios", "compartidos", "cpc_mxn", "tasa_de_conversion",
-                "gasto_publicitario_mxn", "seguidores_nuevos", "total_de_seguidores"
-            ]
+            # Asegurar que siempre se mande el nombre de la tabla
+            params.setdefault('nombre_tabla', 'publicaciones')
 
-            filters = []
-
-            # Filtrado por ID (lista o entero)
-            ids = payload.get("id")
-            if ids is not None:
-                if isinstance(ids, int):
-                    ids = [ids]
-                elif not isinstance(ids, list):
-                    return {"error": "El campo 'id' debe ser un entero o una lista."}, 400
-                filters.append(f"id IN ({','.join(map(str, ids))})")
-
-            # Otros filtros
-            for field, value in payload.items():
-                if field == "id" or field not in allowed_fields:
-                    continue
-
-                if isinstance(value, (int, float)):
-                    filters.append(f"{field} = {value}")
-                elif isinstance(value, str):
-                    match = re.match(r"^(<=|>=|=|<|>)(\d+(\.\d+)?)$", value)
-                    if match:
-                        operator, num_value, _ = match.groups()
-                        filters.append(f"{field} {operator} {num_value}")
-                    elif value.isdigit():
-                        filters.append(f"{field} = {int(value)}")
-                    else:
-                        return {"error": f"Formato inválido para '{field}'. Usa operadores como >1000 o <=500."}, 400
-
-            condiciones = f"WHERE {' AND '.join(filters)}" if filters else None
-
-            data = {
-                "nombre_tabla": "publicaciones",
-                "columnas": allowed_fields,
-                "condiciones": [condiciones] if condiciones else [],
-                "tipo_orden": {"fecha": "desc"},
-                "registros": 10
-            }
-
-            code, response = self.api.GET(
-                endpoint="/business/registers",
-                data=data
-            )
-
-            return response, code
-
+            
+            # Realizar solicitud GET a la API
+            print(f"Parámetros enviados a la API externa: {params}")
+            response, data = self.api.GET(endpoint, data=params)
+            
+            # Verificar si la respuesta es exitosa
+            if response == "Failure to get data":
+                return {
+                    "status": "error",
+                    "message": f"Error al obtener datos de publicaciones: {str(data)}",
+                    "trace": traceback.format_exc()
+                }, 500
+            
+            # Verificar si la respuesta es un objeto Response válido
+            if not hasattr(response, 'status_code'):
+                return {
+                    "status": "error",
+                    "message": "Respuesta inválida del servidor",
+                    "trace": "No se recibió un objeto Response válido"
+                }, 500
+            
+            # Formatear la respuesta
+            return {
+                "status": "success",
+                "data": data,
+                "message": "Datos de publicaciones obtenidos correctamente"
+            }, response.status_code
+            
         except Exception as e:
-            return {"error": str(e)}, 500
+            error_msg = str(e)
+            traceback_str = traceback.format_exc()
+            
+            return {
+                "status": "error",
+                "message": f"Error al obtener datos de publicaciones: {error_msg}",
+                "trace": traceback_str
+            }, 500
+
 
     def post(self):
         try:
-            payload = request.json
+            # Leer el cuerpo JSON de la solicitud
+            data = request.get_json()
 
-            campos_requeridos = [
-                "fecha", "alcance_total", "impresiones", "interacciones",
-                "clics_en_enlace", "reacciones", "comentarios", "compartidos",
-                "cpc_mxn", "tasa_de_conversion", "gasto_publicitario_mxn",
-                "seguidores_nuevos", "total_de_seguidores"
-            ]
+            nombre_tabla = data.get('nombre_tabla')
+            registros = data.get('registros')
 
-            # Verificar que los campos requeridos estén en el payload
-            if not all(campo in payload for campo in campos_requeridos):
-                return {"error": "Faltan campos obligatorios"}, 400
+            if not nombre_tabla or not registros:
+                return {"error": "Faltan 'nombre_tabla' o 'registros'."}, 400
 
-            # Verifica que los campos contengan datos válidos
-            if not isinstance(payload["alcance_total"], (int, float)):
-                return {"error": "'alcance_total' debe ser un número válido"}, 400
+            # Crear un DataFrame desde los registros
+            df = pd.DataFrame(registros)
 
-            # Crear los datos para enviar
-            data = {
-                "nombre_tabla": "publicaciones",
-                "registros": [
-                    {
-                        **payload,
-                        "timestamp": time.time()
-                    }
-                ]
+            # Mapeo de columnas del Excel al nombre de base de datos
+            mapeo_columnas = {
+                "Post ID": "post_id",
+                "Page ID": "page_id",
+                "Page name": "page_name",
+                "Title": "title",
+                "Description": "description",
+                "Duration (sec)": "duration_sec",
+                "Publish time": "publish_time",
+                "Caption type": "caption_type",
+                "Permalink": "permalink",
+                "Is crosspost": "is_crosspost",
+                "Is share": "is_share",
+                "Post type": "post_type",
+                "Languages": "languages",
+                "Custom labels": "custom_labels",
+                "Funded content status": "funded_content_status",
+                "Data comment": "data_comment",
+                "Date": "date",
+                "Views": "views",
+                "Reach": "reach",
+                "Reactions": "reactions",
+                "Comments": "comments",
+                "Shares": "shares",
+                "Total clicks": "total_clicks",
+                "Other Clicks": "other_clicks",
+                "Link Clicks": "link_clicks",
+                "Matched Audience Targeting Consumption (Photo Click)": "matc_pc",
+                "Seconds viewed": "seconds_viewed",
+                "Average Seconds viewed": "average_seconds_viewed",
+                "Estimated earnings (USD)": "estimated_earnings_usd",
+                "Ad CPM (USD)": "ad_cpm_usd",
+                "Ad impressions": "ad_impressions"
             }
 
-            # Hacer el POST a la API
-            code, response = self.api.POST(
-                endpoint="/business/registers",
-                data=data
-            )
+            # Aplicar el mapeo solo si alguna columna del mapeo existe en el DataFrame
+            columnas_presentes = [col for col in mapeo_columnas.keys() if col in df.columns]
+            if columnas_presentes:
+                df.rename(columns={col: mapeo_columnas[col] for col in columnas_presentes}, inplace=True)
 
-            return response, code
+            # Filtrar para dejar solo columnas válidas (por si trae columnas basura)
+            columnas_validas = list(mapeo_columnas.values())
+            df = df[[col for col in columnas_validas if col in df.columns]]
+
+            # Crear conexión a la base de datos
+            engine = create_engine(API_URL)
+
+            # Insertar los datos
+            df.to_sql(nombre_tabla, con=engine, if_exists='append', index=False)
+
+            return {"message": "Datos insertados exitosamente en la base de datos"}, 200
 
         except Exception as e:
             return {"error": str(e)}, 500
+
 
 
     def delete(self):
+        """
+        Método DELETE para eliminar publicaciones con condiciones personalizadas.
+        
+        El cuerpo de la solicitud debe contener:
+        {
+            "nombre_tabla": "publicaciones",
+            "condiciones": "WHERE reactions > 0"
+        }
+        """
         try:
-            campo = request.args.get("campo")
-            valor = request.args.get("valor")
+            # Obtener los datos del cuerpo de la solicitud
+            body_data = request.get_json()
 
-            if not campo or not valor:
-                return {"error": "Falta 'campo' o 'valor'"}, 400
+            # Verificar que 'condiciones' esté presente
+            if not body_data.get('condiciones'):
+                return {"status": "error", "message": "'condiciones' es un parámetro obligatorio"}, 400
 
-            condiciones = f"WHERE {campo} = '{valor}'"
+            # Configurar el endpoint
+            endpoint = "/business/registers"
 
-            data = {
-                "nombre_tabla": "publicaciones",
-                "condiciones": condiciones
-            }
+            # Enviar solicitud DELETE a la API con los datos (nombre_tabla y condiciones)
+            response, data_response = self.api.DELETE(endpoint=endpoint, data=body_data)
 
-            code, response = self.api.DELETE(
-                endpoint="/business/registers",
-                data=data
-            )
+            # Verificar si la respuesta fue exitosa
+            if response == "Failure to delete":
+                return {"status": "error", "message": f"Error al eliminar la publicación: {data_response}"}, 500
 
-            return response, code
+            return {
+                "status": "success",
+                "message": "Publicaciones eliminadas correctamente",
+                "data": data_response
+            }, 200
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            error_msg = str(e)
+            traceback_str = traceback.format_exc()
+            return {
+                "status": "error",
+                "message": f"Error al eliminar publicaciones: {error_msg}",
+                "trace": traceback_str
+            }, 500

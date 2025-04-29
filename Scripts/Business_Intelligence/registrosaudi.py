@@ -1,141 +1,148 @@
-from flask_restful import Resource, request
+from flask import request
+from flask_restful import Resource
+import pandas as pd
 import time
-import re
 import os
+import traceback
+from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from ..api_methods import API_Methods
 
-load_dotenv()  # Esto busca el archivo .env y carga las variables
-
+# Cargar variables de entorno
+load_dotenv()
 API_URL = os.getenv("API_BASE_URL")
 
-class AudienciaAPI(Resource):
+class Audiencia(Resource):
     def __init__(self):
         self.api = API_Methods(url=API_URL)
+        self.allowed_fields = [
+            "fecha", "edad_promedio", "porcentaje_hombres",
+            "porcentaje_mujeres", "ubicacion_principal"
+        ]
 
     def get(self):
+        """
+        Método GET para obtener datos de la tabla audiencia
+        
+        Parámetros opcionales:
+        - fecha: Filtrar por fecha exacta
+        - edad_promedio: Filtrar por edad promedio (ej. >=30)
+        - porcentaje_hombres: Filtrar por porcentaje de hombres
+        - porcentaje_mujeres: Filtrar por porcentaje de mujeres
+        - ubicacion_principal: Filtrar por ubicación principal
+
+        Retorna:
+        - JSON con los datos de audiencia
+        """
         try:
-            data = request.json if request.is_json else {}
+            endpoint = "/business/registers"
+            params = {key: request.args.get(key) for key in request.args}
+            params.setdefault('nombre_tabla', 'audiencia')
 
-            allowed_fields = [
-                "id", "fecha", "edad_promedio", "porcentaje_hombres",
-                "porcentaje_mujeres", "ubicacion_principal"
-            ]
+            print(f"Parámetros enviados a la API externa: {params}")
+            response, data = self.api.GET(endpoint, data=params)
 
-            condiciones = []
-            tipo_orden = {}
-            valores = []
+            if response == "Failure to get data":
+                return {
+                    "status": "error",
+                    "message": f"Error al obtener datos de audiencia: {str(data)}",
+                    "trace": traceback.format_exc()
+                }, 500
 
-            ids = data.get("id", None)
-            if ids is not None:
-                if isinstance(ids, int):
-                    ids = [ids]
-                elif not isinstance(ids, list):
-                    return {"status": "failed", "reason": "El campo 'id' debe ser un entero o una lista."}, 400
+            if not hasattr(response, 'status_code'):
+                return {
+                    "status": "error",
+                    "message": "Respuesta inválida del servidor",
+                    "trace": "No se recibió un objeto Response válido"
+                }, 500
 
-                condiciones.append(f"id IN ({','.join(['?']*len(ids))})")
-                valores.extend(ids)
-
-            for field, value in data.items():
-                if field == "id":
-                    continue
-                if field not in allowed_fields:
-                    continue
-
-                if isinstance(value, (int, float)):
-                    condiciones.append(f"{field} = ?")
-                    valores.append(value)
-                elif isinstance(value, str):
-                    match = re.match(r"^(<=|>=|=|<|>)(\d+(\.\d+)?)$", value)
-                    if match:
-                        operator, num_value, _ = match.groups()
-                        condiciones.append(f"{field} {operator} ?")
-                        valores.append(float(num_value))
-                    elif value.isdigit():
-                        condiciones.append(f"{field} = ?")
-                        valores.append(int(value))
-                    else:
-                        condiciones.append(f"{field} = ?")
-                        valores.append(value)
-
-            where_clause = f"WHERE {' AND '.join(condiciones)}" if condiciones else ""
-
-            api_data = {
-                "nombre_tabla": "audiencia",
-                "columnas": allowed_fields,
-                "condiciones": [where_clause] if where_clause else [],
-                "tipo_orden": {"fecha": "desc"},
-                "registros": data.get("registros", 10)
-            }
-
-            code, response = self.api.GET(
-                endpoint="/business/registers",
-                data=api_data
-            )
-            return response, code
+            return {
+                "status": "success",
+                "data": data,
+                "message": "Datos de audiencia obtenidos correctamente"
+            }, response.status_code
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            return {
+                "status": "error",
+                "message": f"Error al obtener datos de audiencia: {str(e)}",
+                "trace": traceback.format_exc()
+            }, 500
 
     def post(self):
         try:
-            payload = request.json
-            campos_requeridos = [
-                "fecha", "edad_promedio", "porcentaje_hombres",
-                "porcentaje_mujeres", "ubicacion_principal"
-            ]
+            # Leer el cuerpo JSON de la solicitud
+            data = request.get_json()
 
-            if not all(campo in payload for campo in campos_requeridos):
-                return {"error": "Faltan campos obligatorios"}, 400
+            nombre_tabla = data.get('nombre_tabla')
+            registros = data.get('registros')
 
-            data = {
-                "nombre_tabla": "audiencia",
-                "registros": [
-                    {
-                        **payload,
-                        "timestamp": time.time()
-                    }
-                ]
+            if not nombre_tabla or not registros:
+                return {"error": "Faltan 'nombre_tabla' o 'registros'."}, 400
+
+            # Crear un DataFrame desde los registros
+            df = pd.DataFrame(registros)
+
+            # Mapeo de columnas del Excel al nombre de base de datos para la tabla audiencia
+            mapeo_columnas = {
+                "Fecha": "fecha",
+                "Edad Promedio": "edad_promedio",
+                "Porcentaje Hombres (%)": "porcentaje_hombres",
+                "Porcentaje Mujeres (%)": "porcentaje_mujeres",
+                "Ubicación Principal": "ubicacion_principal"
             }
 
-            code, response = self.api.POST(
-                endpoint="/business/registers",
-                data=data
-            )
+            # Aplicar el mapeo solo si alguna columna del mapeo existe en el DataFrame
+            columnas_presentes = [col for col in mapeo_columnas.keys() if col in df.columns]
+            if columnas_presentes:
+                df.rename(columns={col: mapeo_columnas[col] for col in columnas_presentes}, inplace=True)
 
-            return response, code
+            # Filtrar para dejar solo columnas válidas (por si trae columnas basura)
+            columnas_validas = list(mapeo_columnas.values())
+            df = df[[col for col in columnas_validas if col in df.columns]]
+
+            # Crear conexión a la base de datos
+            engine = create_engine(API_URL)
+
+            # Insertar los datos
+            df.to_sql(nombre_tabla, con=engine, if_exists='append', index=False)
+
+            return {"message": "Datos insertados exitosamente en la base de datos"}, 200
 
         except Exception as e:
             return {"error": str(e)}, 500
 
     def delete(self):
+        """
+        Método DELETE para eliminar registros de audiencia con condiciones personalizadas.
+
+        Cuerpo de la solicitud:
+        {
+            "nombre_tabla": "audiencia",
+            "condiciones": "WHERE edad_promedio > 30"
+        }
+        """
         try:
-            data = request.json if request.is_json else {}
-            ids = data.get("id", None)
+            body_data = request.get_json()
 
-            if isinstance(ids, int):
-                ids = [ids]
-            elif ids is None or isinstance(ids, list):
-                pass
-            else:
-                return {"error": "El campo 'id' debe ser un entero, una lista o null."}, 400
+            if not body_data.get('condiciones'):
+                return {"status": "error", "message": "'condiciones' es un parámetro obligatorio"}, 400
 
-            if ids:
-                condiciones = f"id IN ({','.join(map(str, ids))})"
-            else:
-                return {"error": "Se requiere al menos un ID para eliminar registros."}, 400
+            endpoint = "/business/registers"
+            response, data_response = self.api.DELETE(endpoint=endpoint, data=body_data)
 
-            data = {
-                "nombre_tabla": "audiencia",
-                "condiciones": f"WHERE {condiciones}"
-            }
+            if response == "Failure to delete":
+                return {"status": "error", "message": f"Error al eliminar audiencia: {data_response}"}, 500
 
-            code, response = self.api.DELETE(
-                endpoint="/business/registers",
-                data=data
-            )
-
-            return response, code
+            return {
+                "status": "success",
+                "message": "Registros de audiencia eliminados correctamente",
+                "data": data_response
+            }, 200
 
         except Exception as e:
-            return {"error": str(e)}, 500
+            return {
+                "status": "error",
+                "message": f"Error al eliminar registros de audiencia: {str(e)}",
+                "trace": traceback.format_exc()
+            }, 500

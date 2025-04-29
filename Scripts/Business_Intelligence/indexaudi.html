@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrar Audiencia</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <h2>Sube tu archivo Excel (POST)</h2>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" accept=".xlsx" required>
+        <button type="submit">Subir archivo</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script>
+        const API_BASE_URL = 'https://cedrus-database.onrender.com'; // Cambia esto con la URL de tu API
+        const responseDiv = document.getElementById('response');
+
+        // --- POST --- 
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const binaryData = e.target.result;
+                const workbook = XLSX.read(binaryData, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const records = XLSX.utils.sheet_to_json(sheet);
+
+                const mapeoColumnas = {
+                    "Fecha": "fecha",
+                    "Edad Promedio": "edad_promedio",
+                    "Porcentaje Hombres (%)": "porcentaje_hombres",
+                    "Porcentaje Mujeres (%)": "porcentaje_mujeres",
+                    "Ubicación Principal": "ubicacion_principal"
+                };
+
+                // Normalizar los registros según el mapeo
+                const registrosNormalizados = records.map(record => {
+                    const nuevoRegistro = {};
+                    for (const key in record) {
+                        // Aquí estamos usando el mapeo para renombrar las columnas
+                        nuevoRegistro[mapeoColumnas[key] || key] = record[key];
+                    }
+                    return nuevoRegistro;
+                });
+
+                const dataToSend = {
+                    "nombre_tabla": "audiencia",  // Nombre de la tabla
+                    "registros": registrosNormalizados  // Enviar registros
+                };
+
+                fetch(`${API_BASE_URL}/business/registers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToSend)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    responseDiv.innerHTML = `<h3>Respuesta del servidor:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                })
+                .catch(error => {
+                    responseDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+                });
+            };
+
+            reader.readAsBinaryString(file);
+        });
+    </script>
+
+</body>
+</html>

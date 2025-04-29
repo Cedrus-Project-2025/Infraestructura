@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrar Publicaciones</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <h2>Sube tu archivo Excel (POST)</h2>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" accept=".xlsx" required>
+        <button type="submit">Subir archivo</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script>
+        const API_BASE_URL = 'url base de datosss';
+        const responseDiv = document.getElementById('response');
+
+        // --- POST ---
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const binaryData = e.target.result;
+                const workbook = XLSX.read(binaryData, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const records = XLSX.utils.sheet_to_json(sheet);
+
+                const mapeoColumnas = {
+                    "Post ID": "post_id",
+                    "Page ID": "page_id",
+                    "Page name": "page_name",
+                    "Title": "title",
+                    "Description": "description",
+                    "Duration (sec)": "duration_sec",
+                    "Publish time": "publish_time",
+                    "Caption type": "caption_type",
+                    "Permalink": "permalink",
+                    "Is crosspost": "is_crosspost",
+                    "Is share": "is_share",
+                    "Post type": "post_type",
+                    "Languages": "languages",
+                    "Custom labels": "custom_labels",
+                    "Funded content status": "funded_content_status",
+                    "Data comment": "data_comment",
+                    "Date": "date",
+                    "Views": "views",
+                    "Reach": "reach",
+                    "Reactions": "reactions",
+                    "Comments": "comments",
+                    "Shares": "shares",
+                    "Total clicks": "total_clicks",
+                    "Other Clicks": "other_clicks",
+                    "Link Clicks": "link_clicks",
+                    "Matched Audience Targeting Consumption (Photo Click)": "matc_pc",
+                    "Seconds viewed": "seconds_viewed",
+                    "Average Seconds viewed": "average_seconds_viewed",
+                    "Estimated earnings (USD)": "estimated_earnings_usd",
+                    "Ad CPM (USD)": "ad_cpm_usd",
+                    "Ad impressions": "ad_impressions"
+                };
+
+                const registrosNormalizados = records.map(record => {
+                    const nuevoRegistro = {};
+                    for (const key in record) {
+                        if (key === "Reactions, Comments and Shares") {
+                            continue;
+                        }
+                        nuevoRegistro[mapeoColumnas[key] || key] = record[key];
+                    }
+                    return nuevoRegistro;
+                });
+
+                const dataToSend = {
+                    "nombre_tabla": "publicaciones",  // Nombre de la tabla
+                    "registros": registrosNormalizados  // Enviar registros
+                };
+
+                fetch(`${API_BASE_URL}/business/registers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToSend)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    responseDiv.innerHTML = `<h3>Respuesta del servidor:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                })
+                .catch(error => {
+                    responseDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+                });
+            };
+
+            reader.readAsBinaryString(file);
+        });
+
+    </script>
+
+</body>
+</html>
