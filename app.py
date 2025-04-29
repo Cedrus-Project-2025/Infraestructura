@@ -15,28 +15,28 @@ api = Api(app)
 
 
 # ===== Endpoints Asistente Virtual
-from Scripts.Asistente_Virtual.chat    import Chatbot_Response
+'''from Scripts.Asistente_Virtual.chat    import Chatbot_Response
 from Scripts.Asistente_Virtual.configs import Obtener_Configs
 
 api.add_resource(Chatbot_Response, "/api/a/chat")
-api.add_resource(Obtener_Configs,  "/api/a/configs")
+api.add_resource(Obtener_Configs,  "/api/a/configs")'''
 
 
 
 
 # ===== Endpoints BI
 from Scripts.Business_Intelligence.registrospubli import Publicaciones
-from Scripts.Business_Intelligence.registrosaudi  import AudienciaAPI
+from Scripts.Business_Intelligence.registrosaudi  import Audiencia
 
 api.add_resource(Publicaciones,    '/api/b/publicaciones')
-api.add_resource(AudienciaAPI,     '/api/b/audiencia')
+api.add_resource(Audiencia,     '/api/b/audiencia')
 
 
 
 # ===== Endpoints Web
-from Scripts.Desarrollo_Web.web_config import ContactoCentro_Config, OpcionesContacto_Config
+'''from Scripts.Desarrollo_Web.web_config import ContactoCentro_Config, OpcionesContacto_Config
 api.add_resource(ContactoCentro_Config,   '/api/w/contacto_centro')
-api.add_resource(OpcionesContacto_Config, '/api/w/opciones_contacto')
+api.add_resource(OpcionesContacto_Config, '/api/w/opciones_contacto')'''
 
 if __name__ == "__main__":
     app.run(debug=True)

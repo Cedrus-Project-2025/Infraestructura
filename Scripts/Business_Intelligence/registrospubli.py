@@ -28,24 +28,32 @@ class Publicaciones(Resource):
 
     def get(self):
         """
-        Método GET para obtener datos de la tabla publicaciones
-        
-        Parámetros opcionales:
-        - id: Filtrar por id específico
-        - post_id: Filtrar por post_id
-        - page_id: Filtrar por page_id
-        - post_type: Filtrar por tipo de publicación
-        - date_from: Filtrar desde una fecha (formato YYYY-MM-DD)
-        - date_to: Filtrar hasta una fecha (formato YYYY-MM-DD)
-        - fields: Campos específicos a devolver (separados por comas)
-        - limit: Límite de registros a devolver
-        - offset: Número de registros a omitir
-        - sort_by: Campo por el cual ordenar
-        - sort_dir: Dirección de ordenamiento (asc/desc)
-        
+        Método GET para obtener datos de la tabla publicaciones.
+
+        Puedes aplicar filtros, seleccionar campos específicos y paginar los resultados.
+
+        Parámetros opcionales (en la URL como query params):
+        - post_id: Filtrar por el ID de la publicación.
+        - page_id: Filtrar por el ID de la página.
+        - page_name: Filtrar por el nombre de la página.
+        - title: Filtrar por el título de la publicación.
+        - description: Filtrar por la descripción.
+        - publish_time: Filtrar por hora de publicación exacta (YYYY-MM-DD HH:MM:SS).
+        - post_type: Filtrar por el tipo de publicación (ej. video, photo, link, etc.).
+        - languages: Filtrar por idiomas usados en la publicación.
+        - date: Filtrar por fecha exacta (YYYY-MM-DD).
+        - date_from: Filtrar desde una fecha (YYYY-MM-DD).
+        - date_to: Filtrar hasta una fecha (YYYY-MM-DD).
+        - fields: Campos específicos a devolver, separados por comas (ej. post_id,page_name,views).
+        - limit: Número máximo de registros a devolver.
+        - offset: Número de registros a omitir desde el inicio.
+        - sort_by: Campo por el cual ordenar los resultados.
+        - sort_dir: Dirección de ordenamiento: 'asc' para ascendente, 'desc' para descendente.
+
         Retorna:
-        - JSON con los datos de publicaciones
+        - JSON con los datos de publicaciones filtrados y estructurados.
         """
+
         try:
             # Construir endpoint para la solicitud
             endpoint = "/business/registers"
