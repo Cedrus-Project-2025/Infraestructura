@@ -1,7 +1,6 @@
 from flask import request
 from flask_restful import Resource
 import pandas as pd
-import time
 import os
 import traceback
 from sqlalchemy import create_engine

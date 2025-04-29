@@ -1,10 +1,8 @@
 from flask import request
 from flask_restful import Resource
 import pandas as pd
-import time
 import os
 import traceback
-import re
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from ..api_methods import API_Methods

@@ -7,3 +7,6 @@ gunicorn
 
 flask-sqlalchemy
 psycopg2
+
+pandas
+sqlalchemy
