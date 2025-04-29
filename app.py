@@ -15,11 +15,11 @@ api = Api(app)
 
 
 # ===== Endpoints Asistente Virtual
-'''from Scripts.Asistente_Virtual.chat    import Chatbot_Response
-from Scripts.Asistente_Virtual.configs import Obtener_Configs
+from Scripts.Asistente_Virtual.chat    import ChatbotResponse
+from Scripts.Asistente_Virtual.configs import ObtenerConfigs
 
-api.add_resource(Chatbot_Response, "/api/a/chat")
-api.add_resource(Obtener_Configs,  "/api/a/configs")'''
+api.add_resource(ChatbotResponse, "/api/a/chat")
+api.add_resource(ObtenerConfigs,  "/api/a/configs")
 
 
 
@@ -28,15 +28,19 @@ api.add_resource(Obtener_Configs,  "/api/a/configs")'''
 from Scripts.Business_Intelligence.registrospubli import Publicaciones
 from Scripts.Business_Intelligence.registrosaudi  import Audiencia
 
-api.add_resource(Publicaciones,    '/api/b/publicaciones')
+api.add_resource(Publicaciones, '/api/b/publicaciones')
 api.add_resource(Audiencia,     '/api/b/audiencia')
 
 
 
-# ===== Endpoints Web
-'''from Scripts.Desarrollo_Web.web_config import ContactoCentro_Config, OpcionesContacto_Config
-api.add_resource(ContactoCentro_Config,   '/api/w/contacto_centro')
-api.add_resource(OpcionesContacto_Config, '/api/w/opciones_contacto')'''
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# ===== Endpoints Web
+from Scripts.Desarrollo_Web.general   import ObtenerConfigsGeneral
+from Scripts.Desarrollo_Web.proyectos import ObtenerConfigsProyectos
+
+api.add_resource(ObtenerConfigsGeneral,   '/api/w/general')
+api.add_resource(ObtenerConfigsProyectos, '/api/w/proyectos')
+
+
+if __name__ == '__main__':
+    app.run(debug=True) 

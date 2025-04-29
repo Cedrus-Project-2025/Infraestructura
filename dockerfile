@@ -1,9 +1,9 @@
 # ========== Comando para crear y levantar docker
-# clear; docker build -t cumbres-api .; docker run -p 5000:5000 cumbres-api 
+# clear; docker build -t cumbres-api .; docker run -p 5000:5000 cumbres-api
 # ========== 
 
 # Usa una imagen base de Python 3.11
-FROM python:3.11 
+FROM python:3.11
 
 # Establecer el directorio de trabajo en el contenedor
 WORKDIR /app
