@@ -1,7 +1,6 @@
 from flask import request
 from flask_restful import Resource
 import pandas as pd
-import time
 import os
 import traceback
 from sqlalchemy import create_engine
@@ -10,7 +9,7 @@ from ..api_methods import API_Methods
 
 # Cargar variables de entorno
 load_dotenv()
-API_URL = os.getenv("API_BASE_URL")
+API_URL = os.getenv("URL_DATABASE")
 
 class Audiencia(Resource):
     def __init__(self):
