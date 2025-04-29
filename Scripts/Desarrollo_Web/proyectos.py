@@ -34,7 +34,6 @@ class ObtenerConfigsProyectos(Resource):
                 "propuestas": "proyectos_diseno_propuestas",
                 "estilos": "proyectos_diseno_estilos",
 
-                # 🔥 NUEVAS para contacto:
                 "contacto_config": "proyectos_contacto_config",
                 "contacto_opciones": "proyectos_contacto_opciones",
                 "contacto_modales": "proyectos_contacto_modal",
@@ -97,6 +96,15 @@ class ObtenerConfigsProyectos(Resource):
 
             # MAPA
             mapa_info = data['mapa'][0] if data['mapa'] else {}
+
+            marker_icon = {
+                'html': mapa_info.get('marker_icon_html', ''),
+                'className': mapa_info.get('marker_icon_className', ''),
+                'iconSize': json.loads(mapa_info.get('marker_icon_iconSize', '[30, 42]')),
+                'iconAnchor': json.loads(mapa_info.get('marker_icon_iconAnchor', '[15, 42]')),
+                'popupAnchor': json.loads(mapa_info.get('marker_icon_popupAnchor', '[0, -42]'))
+            }
+
             mapa_data_cumbres = {
                 'titulo': mapa_info.get('titulo', ''),
                 'descripcion': mapa_info.get('descripcion', ''),
@@ -105,19 +113,23 @@ class ObtenerConfigsProyectos(Resource):
                 'map_zoom': mapa_info.get('map_zoom', 10),
                 'tiles_url': mapa_info.get('tiles_url', ''),
                 'tiles_attribution': mapa_info.get('tiles_attribution', ''),
-                'locations': [{
-                    'name': l.get('name', ''),
-                    'coords': list(map(float, l.get('coords', '0,0').split(','))) if l.get('coords') else [],
-                    'img': l.get('img', ''),
-                    'link': l.get('link', ''),
-                    'description': l.get('description', '')
-                } for l in data['locations']],
-                'marker_icon': mapa_info.get('marker_icon', ''),
+                'locations': [
+                    {
+                        'name': l.get('name', ''),
+                        'coords': list(map(float, l.get('coords', '0,0').split(','))) if l.get('coords') else [],
+                        'img': l.get('img', ''),
+                        'link': l.get('link', ''),
+                        'description': l.get('description', '')
+                    } for l in data['locations']
+                ],
+                'marker_icon': marker_icon,
                 'polygon': json.loads(mapa_info.get('polygon', '[]')),
                 'zoom_control': json.loads(mapa_info.get('zoom_control', '{}'))
             }
+
             if mapa_info.get('map_options'):
                 mapa_data_cumbres['map_options'] = json.loads(mapa_info['map_options'])
+
 
             # AMENIDADES
             amenidades_info = data['amenidades'][0] if data['amenidades'] else {}
@@ -192,7 +204,6 @@ class ObtenerConfigsProyectos(Resource):
                     'modal': modal_info
                 }
 
-                # Solo si es la opción de Financiamiento agregar los planes
                 if opcion_id == 'cumbres-financing':
                     nueva_opcion['modal']['planes'] = []
                     for plan in contacto_planes:
@@ -226,17 +237,14 @@ class ObtenerConfigsProyectos(Resource):
                 if f.get('tipo') == 'terminos'
             ]
             footer_data_cumbres = {
-                # Logo y descripción
                 'logo': footer_info.get('logo', ''),
                 'descripcion': footer_info.get('descripcion', ''),
 
-                # Redes sociales
                 'social_links': [{
                     'icono': s.get('icono', ''),
                     'url': s.get('url', '')
                 } for s in data['footer_social']],
 
-                # Enlaces rápidos
                 'enlaces_titulo': footer_info.get('enlaces_titulo', ''),
                 'enlaces': [{
                     'texto': l.get('texto', ''),
@@ -252,14 +260,12 @@ class ObtenerConfigsProyectos(Resource):
                     'target': c.get('target', '')
                 } for c in data['footer_contacto']],
 
-                # Horarios de atención
                 'horarios_titulo': footer_info.get('horarios_titulo', ''),
                 'horarios': [{
                     'dia': h.get('dia', ''),
                     'horas': h.get('horas', '')
                 } for h in data['footer_horarios']],
 
-                # Copyright
                 'copyright': footer_copyright,
                 'terminos': footer_terminos
          

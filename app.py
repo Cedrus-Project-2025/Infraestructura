@@ -25,20 +25,20 @@ api.add_resource(ObtenerConfigs,  "/api/a/configs")
 
 
 # ===== Endpoints BI
-from Scripts.Business_Intelligence.registrospubli import Publicaciones
-from Scripts.Business_Intelligence.registrosaudi  import Audiencia
+from Scripts.Business_Intelligence.registrospubli import PublicacionesAPI
+from Scripts.Business_Intelligence.registrosaudi  import AudienciaAPI
 
-api.add_resource(Publicaciones, '/api/b/publicaciones')
-api.add_resource(Audiencia,     '/api/b/audiencia')
+api.add_resource(PublicacionesAPI, '/api/b/publicaciones')
+api.add_resource(AudienciaAPI,     '/api/b/audiencia')
 
 
 
 
 # ===== Endpoints Web
-from Scripts.Desarrollo_Web.general   import ObtenerConfigsGeneral
-from Scripts.Desarrollo_Web.proyectos import ObtenerConfigsProyectos
+from Scripts.Desarrollo_Web.general import ObtenerConfigsGeneral
+from Scripts.Desarrollo_Web.proyectos    import ObtenerConfigsProyectos
 
-api.add_resource(ObtenerConfigsGeneral,   '/api/w/general')
+api.add_resource(ObtenerConfigsGeneral, '/api/w/general')
 api.add_resource(ObtenerConfigsProyectos, '/api/w/proyectos')
 
 

@@ -265,7 +265,6 @@ class API_Methods:
 
 
 
-# =============== USAGE ===============
 if __name__ == '__main__':
     os.system('clear') if platform.system() == 'Linux' else os.system('cls')
 
