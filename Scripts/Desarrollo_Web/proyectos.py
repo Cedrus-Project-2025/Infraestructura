@@ -13,6 +13,10 @@ class ObtenerConfigsProyectos(Resource):
     def get_field(self, data_list, field, default=''):
         return (data_list[0] or {}).get(field, default) if data_list else default
 
+    def filtrar_campos(self, data_list):
+        campos_excluir = {'id', 'activo', 'orden', 'fecha_creacion', 'fecha_modificacion'}
+        return [{k: v for k, v in item.items() if k not in campos_excluir} for item in data_list]
+
     def get(self):
         try:
             tablas = {
@@ -29,6 +33,13 @@ class ObtenerConfigsProyectos(Resource):
                 "materiales": "proyectos_diseno_materiales",
                 "propuestas": "proyectos_diseno_propuestas",
                 "estilos": "proyectos_diseno_estilos",
+
+                # 🔥 NUEVAS para contacto:
+                "contacto_config": "proyectos_contacto_config",
+                "contacto_opciones": "proyectos_contacto_opciones",
+                "contacto_modales": "proyectos_contacto_modal",
+                "contacto_planes": "proyectos_contacto_planes",
+
                 "footer": "proyectos_footer",
                 "footer_social": "proyectos_footer_social",
                 "footer_links": "proyectos_footer_links",
@@ -36,8 +47,8 @@ class ObtenerConfigsProyectos(Resource):
                 "footer_horarios": "proyectos_footer_horarios"
             }
 
-            data = {}
 
+            data = {}
             for key, table in tablas.items():
                 code, response = self.api_base_datos.GET(
                     endpoint='/web/registers',
@@ -45,66 +56,72 @@ class ObtenerConfigsProyectos(Resource):
                 )
                 response_code = code.status_code if hasattr(code, "status_code") else code
                 if response_code == 200 and response.get("status") == "fetched!":
-                    data[key] = response.get("result", [])
+                    data[key] = self.filtrar_campos(response.get("result", []))
                 else:
                     data[key] = []
 
+            # HOME
             proyecto = data['proyectos'][0] if data['proyectos'] else {}
-            mapa_info = data['mapa'][0] if data['mapa'] else {}
-            diseno_info = data['diseno'][0] if data['diseno'] else {}
-            amenidades_info = data['amenidades'][0] if data['amenidades'] else {}
-            footer_info = data['footer'][0] if data['footer'] else {}
-
-            respuesta = {
-                "home_data": {
-                    'titulo': proyecto.get('nombre', ''),
-                    'subtitulo': proyecto.get('descripcion', ''),
-                    'slides': [{
-                        'subtitulo': s.get('subtitulo', ''),
-                        'titulo_parte1': s.get('titulo_parte1', ''),
-                        'titulo_parte2': s.get('titulo_parte2', ''),
-                        'boton_texto': s.get('boton_texto', ''),
-                        'boton_link': s.get('boton_link', ''),
-                        'imagen': s.get('imagen', ''),
-                        'alt': s.get('alt', '')
-                    } for s in data['slides']]
-                },
-                "about_data": {
-                    'titulo': self.get_field(data['about'], 'titulo'),
-                    'subtitulo': self.get_field(data['about'], 'subtitulo'),
-                    'descripcion': [self.get_field(data['about'], 'descripcion')],
-                    'imagen': self.get_field(data['about'], 'imagen'),
-                    'imagen_alt': self.get_field(data['about'], 'imagen_alt'),
-                    'valores': [{
-                        'icono': v.get('icono', ''),
-                        'titulo': v.get('titulo', ''),
-                        'descripcion': v.get('descripcion', '')
-                    } for v in data['valores']]
-                },
-                "mapa_data": {}
+            home_data_cumbres = {
+                'titulo': proyecto.get('nombre', ''),
+                'subtitulo': proyecto.get('descripcion', ''),
+                'slides': [{
+                    'subtitulo': s.get('subtitulo', ''),
+                    'titulo_parte1': s.get('titulo_parte1', ''),
+                    'titulo_parte2': s.get('titulo_parte2', ''),
+                    'boton_texto': s.get('boton_texto', ''),
+                    'boton_link': s.get('boton_link', ''),
+                    'imagen': s.get('imagen', ''),
+                    'alt': s.get('alt', '')
+                } for s in data['slides']],
+                "social_facebook": next((s['url'] for s in data['footer_social'] if 'facebook' in (s.get('icono') or '').lower()), ''),
+                "social_instagram": next((s['url'] for s in data['footer_social'] if 'instagram' in (s.get('icono') or '').lower()), ''),
+                "social_whatsapp": next((s['url'] for s in data['footer_social'] if 'tiktok' in (s.get('icono') or '').lower()), ''),
             }
 
-            if mapa_info:
-                respuesta["mapa_data"] = {
-                    'titulo': mapa_info.get('titulo', ''),
-                    'descripcion': mapa_info.get('descripcion', ''),
-                    'map_id': mapa_info.get('map_id', ''),
-                    'map_center': list(map(float, mapa_info.get('map_center', '0,0').split(','))) if mapa_info.get('map_center') else [],
-                    'map_zoom': mapa_info.get('map_zoom', 10),
-                    'tiles_url': mapa_info.get('tiles_url', ''),
-                    'tiles_attribution': mapa_info.get('tiles_attribution', ''),
-                    'locations': [{
-                        'name': l.get('name', ''),
-                        'coords': list(map(float, l.get('coords', '0,0').split(','))) if l.get('coords') else [],
-                        'img': l.get('img', ''),
-                        'link': l.get('link', ''),
-                        'description': l.get('description', '')
-                    } for l in data['locations']]
-                }
-                if mapa_info.get('map_options'):
-                    respuesta["mapa_data"]['map_options'] = json.loads(mapa_info['map_options'])
+            # ABOUT
+            about_info = data['about'][0] if data['about'] else {}
+            about_data_cumbres = {
+                'titulo': about_info.get('titulo', ''),
+                'subtitulo': about_info.get('subtitulo', ''),
+                'descripcion': [about_info.get('descripcion', '')],
+                'imagen': about_info.get('imagen', ''),
+                'imagen_alt': about_info.get('imagen_alt', ''),
+                'valores': [{
+                    'icono': v.get('icono', ''),
+                    'titulo': v.get('titulo', ''),
+                    'descripcion': v.get('descripcion', '')
+                } for v in data['valores']],
+                'conclusion': about_info.get('conclusion', ''),
+            }
 
-            respuesta["amenidades_data"] = {
+            # MAPA
+            mapa_info = data['mapa'][0] if data['mapa'] else {}
+            mapa_data_cumbres = {
+                'titulo': mapa_info.get('titulo', ''),
+                'descripcion': mapa_info.get('descripcion', ''),
+                'map_id': mapa_info.get('map_id', ''),
+                'map_center': list(map(float, mapa_info.get('map_center', '0,0').split(','))) if mapa_info.get('map_center') else [],
+                'map_zoom': mapa_info.get('map_zoom', 10),
+                'tiles_url': mapa_info.get('tiles_url', ''),
+                'tiles_attribution': mapa_info.get('tiles_attribution', ''),
+                'locations': [{
+                    'name': l.get('name', ''),
+                    'coords': list(map(float, l.get('coords', '0,0').split(','))) if l.get('coords') else [],
+                    'img': l.get('img', ''),
+                    'link': l.get('link', ''),
+                    'description': l.get('description', '')
+                } for l in data['locations']],
+                'marker_icon': mapa_info.get('marker_icon', ''),
+                'polygon': json.loads(mapa_info.get('polygon', '[]')),
+                'zoom_control': json.loads(mapa_info.get('zoom_control', '{}'))
+            }
+            if mapa_info.get('map_options'):
+                mapa_data_cumbres['map_options'] = json.loads(mapa_info['map_options'])
+
+            # AMENIDADES
+            amenidades_info = data['amenidades'][0] if data['amenidades'] else {}
+            amenidades_data_cumbres = {
                 'titulo': amenidades_info.get('titulo', ''),
                 'descripcion': amenidades_info.get('descripcion', ''),
                 'amenidades': [{
@@ -116,45 +133,151 @@ class ObtenerConfigsProyectos(Resource):
                 } for a in data['amenidad_items']]
             }
 
-            respuesta["diseno_data"] = {
+            # DISEÑO
+            diseno_info = data['diseno'][0] if data['diseno'] else {}
+            diseno_personalizado_data_cumbres = {
                 'titulo': diseno_info.get('titulo', ''),
                 'descripcion': diseno_info.get('descripcion', ''),
                 'mapa_imagen': diseno_info.get('mapa_imagen', ''),
                 'mapa_alt': diseno_info.get('mapa_alt', ''),
+                'caracteristicas': [{
+                    'titulo': c.get('titulo', ''),
+                    'descripcion': c.get('descripcion', ''),
+                    'icono': c.get('icono', ''),
+                    'imagen': c.get('imagen', ''),
+                    'alt': c.get('alt', '')
+                } for c in data['caracteristicas']],
                 'materiales_titulo': diseno_info.get('propuestas_titulo', ''),
                 'materiales': [{
-                    'nombre': m.get('nombre', ''),
-                    'descripcion': m.get('descripcion', ''),
-                    'icono': m.get('icono', '')
-                } for m in data['materiales']],
+                    'nombre': mat.get('nombre', ''),
+                    'descripcion': mat.get('descripcion', ''),
+                    'icono': mat.get('icono', '')
+                } for mat in data['materiales']],
+                'propuestas_titulo': diseno_info.get('propuestas_ttitulo', ''),
+                'propuestas_descripcion': diseno_info.get('propuestas_descripcion', ''),
+                'propuestas_icono': diseno_info.get('propuestas_icono', ''),
                 'propuestas_slides': [{
-                    'imagen': p.get('imagen', ''),
-                    'alt': p.get('alt', ''),
-                    'caption': p.get('caption', '')
-                } for p in data['propuestas']],
+                    'imagen': prop.get('imagen', ''),
+                    'alt': prop.get('alt', ''),
+                    'caption': prop.get('caption', '')
+                } for prop in data['propuestas']],
                 'propuestas_estilos': [{
-                    'nombre': e.get('nombre', ''),
-                    'icono': e.get('icono', '')
-                } for e in data['estilos']]
+                    'nombre': est.get('nombre', ''),
+                    'icono': est.get('icono', '')
+                } for est in data['estilos']]
             }
 
-            respuesta["footer_data"] = {
+            # CONTACTO
+            contacto_info = data['contacto_config'][0] if data['contacto_config'] else {}
+            contacto_opciones = data['contacto_opciones']
+            contacto_modales = {m.get('id_opcion'): json.loads(m.get('contenido_modal', '{}')) for m in data['contacto_modales']}
+            contacto_planes = [p for p in data['contacto_planes']]
+
+            contacto_data_cumbres = {
+                'titulo': contacto_info.get('titulo', ''),
+                'descripcion': contacto_info.get('descripcion', ''),
+                'opciones': []
+            }
+
+            for opcion in contacto_opciones:
+                opcion_id = opcion.get('id_opcion')
+                modal_info = contacto_modales.get(opcion_id, {})
+
+                nueva_opcion = {
+                    'id': opcion_id,
+                    'icono': opcion.get('icono', ''),
+                    'titulo': opcion.get('titulo', ''),
+                    'descripcion': opcion.get('descripcion', ''),
+                    'boton_texto': opcion.get('boton_texto', ''),
+                    'modal': modal_info
+                }
+
+                # Solo si es la opción de Financiamiento agregar los planes
+                if opcion_id == 'cumbres-financing':
+                    nueva_opcion['modal']['planes'] = []
+                    for plan in contacto_planes:
+                        if plan.get('id_opcion') == opcion_id:
+                            beneficios = json.loads(plan.get('beneficios', '[]'))
+                            plan_info = {
+                                'titulo': plan.get('titulo', ''),
+                                'icono': plan.get('icono', ''),
+                                'beneficios': beneficios
+                            }
+                            if plan.get('destacado'):
+                                plan_info['destacado'] = True
+                            if plan.get('tag'):
+                                plan_info['tag'] = plan.get('tag')
+                            nueva_opcion['modal']['planes'].append(plan_info)
+
+                contacto_data_cumbres['opciones'].append(nueva_opcion)
+
+
+            # FOOTER
+            footer_info = data['footer'][0] if data['footer'] else {}
+
+            footer_copyright = next(
+                (f.get('copyright', '') for f in data['footer'] if f.get('tipo') == 'copyright'),
+                ''
+            )
+
+            footer_terminos = [
+                {'texto': f.get('texto', ''), 'url': f.get('url', '')}
+                for f in data['footer']
+                if f.get('tipo') == 'terminos'
+            ]
+            footer_data_cumbres = {
+                # Logo y descripción
                 'logo': footer_info.get('logo', ''),
                 'descripcion': footer_info.get('descripcion', ''),
+
+                # Redes sociales
+                'social_links': [{
+                    'icono': s.get('icono', ''),
+                    'url': s.get('url', '')
+                } for s in data['footer_social']],
+
+                # Enlaces rápidos
                 'enlaces_titulo': footer_info.get('enlaces_titulo', ''),
+                'enlaces': [{
+                    'texto': l.get('texto', ''),
+                    'url': l.get('url', '')
+                } for l in data['footer_links']],
+
+                # Información de contacto
                 'contacto_titulo': footer_info.get('contacto_titulo', ''),
+                'contacto_info': [{
+                    'icono': c.get('icono', ''),
+                    'texto': c.get('texto', ''),
+                    'url': c.get('url', ''),
+                    'target': c.get('target', '')
+                } for c in data['footer_contacto']],
+
+                # Horarios de atención
                 'horarios_titulo': footer_info.get('horarios_titulo', ''),
-                'copyright': footer_info.get('copyright', ''),
-                'social_links': data['footer_social'],
-                'links': data['footer_links'],
-                'contacto_info': data['footer_contacto'],
-                'horarios': data['footer_horarios']
+                'horarios': [{
+                    'dia': h.get('dia', ''),
+                    'horas': h.get('horas', '')
+                } for h in data['footer_horarios']],
+
+                # Copyright
+                'copyright': footer_copyright,
+                'terminos': footer_terminos
+         
+
             }
 
             return {
                 "status": "success",
                 "message": "Configuración de proyectos obtenida correctamente",
-                "data": respuesta
+                "data": {
+                    "home_data_cumbres": home_data_cumbres,
+                    "about_data_cumbres": about_data_cumbres,
+                    "mapa_data_cumbres": mapa_data_cumbres,
+                    "amenidades_data_cumbres": amenidades_data_cumbres,
+                    "diseno_personalizado_data_cumbres": diseno_personalizado_data_cumbres,
+                    "contacto_data_cumbres": contacto_data_cumbres,
+                    "footer_data_cumbres": footer_data_cumbres
+                }
             }, 200
 
         except Exception as e:
