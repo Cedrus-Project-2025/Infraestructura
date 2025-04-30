@@ -86,6 +86,7 @@ class ObtenerConfigsProyectos(Resource):
                 'descripcion': [about_info.get('descripcion', '')],
                 'imagen': about_info.get('imagen', ''),
                 'imagen_alt': about_info.get('imagen_alt', ''),
+                'valores_titulo': about_info.get('valores_titulo', ''),
                 'valores': [{
                     'icono': v.get('icono', ''),
                     'titulo': v.get('titulo', ''),
@@ -159,13 +160,13 @@ class ObtenerConfigsProyectos(Resource):
                     'imagen': c.get('imagen', ''),
                     'alt': c.get('alt', '')
                 } for c in data['caracteristicas']],
-                'materiales_titulo': diseno_info.get('propuestas_titulo', ''),
+                'materiales_titulo': diseno_info.get('materiales_titulo', ''),
                 'materiales': [{
                     'nombre': mat.get('nombre', ''),
                     'descripcion': mat.get('descripcion', ''),
                     'icono': mat.get('icono', '')
                 } for mat in data['materiales']],
-                'propuestas_titulo': diseno_info.get('propuestas_ttitulo', ''),
+                'propuestas_titulo': diseno_info.get('propuestas_titulo', ''),
                 'propuestas_descripcion': diseno_info.get('propuestas_descripcion', ''),
                 'propuestas_icono': diseno_info.get('propuestas_icono', ''),
                 'propuestas_slides': [{
