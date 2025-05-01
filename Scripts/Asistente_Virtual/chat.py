@@ -93,8 +93,11 @@ class ChatbotResponse(Resource):
                 }
             )
             if code == "Failure to post":
-                return {"error": "Error al guardar la interacción en la base de datos"}, 500
-
+                return {
+                    "status": "failed!",
+                    "reason": "Error al guardar la interacción en la base de datos",
+                    "detalle": str(response)
+                }, 500
             # ===== Devolver respuesta
             return {
                 "status": "created!",
