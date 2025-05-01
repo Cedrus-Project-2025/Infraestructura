@@ -98,7 +98,6 @@ class ChatbotResponse(Resource):
                     "reason": "Error al guardar la interacción en la base de datos",
                     "detalle": str(response)
                 }, 500
-
             # ===== Devolver respuesta
             return {
                 "status": "created!",
