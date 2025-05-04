@@ -2,6 +2,8 @@ import os
 from flask_restful import Resource
 from ..api_methods import API_Methods
 from dotenv import load_dotenv
+from flask import request
+
 
 load_dotenv()
 
@@ -176,3 +178,81 @@ class ObtenerConfigsGeneral(Resource):
 
         except Exception as e:
             return {"status": "error", "message": f"Error al obtener las configuraciones: {str(e)}", "data": None}, 500
+
+# Metodo POST
+    def post(self):
+        try:
+            data = request.get_json(force=True) or {}
+            nombre_tabla = data.get("nombre_tabla")
+            registros = data.get("registros")
+
+            if not nombre_tabla or not registros:
+                return {"error": "Se requieren 'nombre_tabla' y 'registros'."}, 400
+            if any(not isinstance(r, dict) for r in registros):
+                return {"error": "Cada registro debe ser un diccionario válido."}, 400
+
+            code, response = self.api_base_datos.POST(
+                endpoint="/web/registers",
+                data={
+                    "nombre_tabla": nombre_tabla,
+                    "registros": registros
+                }
+            )
+
+            if code == "Failure to post":
+                return {"status": "failed", "reason": str(response)}, 500
+            return {"status": "created"}, 201
+
+        except Exception as e:
+            import traceback
+            print("ERROR EN POST:", traceback.format_exc())
+            return {"error": "Error inesperado", "detalle": str(e)}, 500
+
+
+# Metodo PATCH
+    def patch(self):
+        data = request.get_json(force=True) or {}
+        nombre_tabla = data.get("nombre_tabla")
+        cambios = data.get("cambios")
+        condiciones = data.get("condiciones")
+
+        if not nombre_tabla or not cambios or not condiciones:
+            return {"error": "Se requieren 'nombre_tabla', 'cambios' y 'condiciones'."}, 400
+        if not condiciones.strip().lower().startswith("where"):
+            return {"error": "Las condiciones deben iniciar con WHERE."}, 400
+
+        code, response = self.api_base_datos.PATCH(
+            endpoint="/web/registers",
+            data={
+                "nombre_tabla": nombre_tabla,
+                "cambios": cambios,
+                "condiciones": condiciones
+            }
+        )
+
+        if code == "Failure to patch":
+            return {"status": "failed", "reason": str(response)}, 500
+        return {"status": "updated"}, 200
+
+# Metodo DELETE
+    def delete(self):
+        data = request.get_json(force=True) or {}
+        nombre_tabla = data.get("nombre_tabla")
+        condiciones = data.get("condiciones")
+
+        if not nombre_tabla or not condiciones:
+            return {"error": "Se requieren 'nombre_tabla' y 'condiciones'."}, 400
+        if not condiciones.strip().lower().startswith("where"):
+            return {"error": "Las condiciones deben iniciar con WHERE."}, 400
+
+        code, response = self.api_base_datos.DELETE(
+            endpoint="/web/registers",
+            data={
+                "nombre_tabla": nombre_tabla,
+                "condiciones": condiciones
+            }
+        )
+
+        if code == "Failure to delete" or (hasattr(code, "status_code") and code.status_code >= 400):
+            return {"status": "failed", "reason": str(response)}, 500
+        return {"status": "deleted"}, 200

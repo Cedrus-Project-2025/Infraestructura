@@ -3,7 +3,6 @@ from flask import request
 from flask_restful import Resource
 from ..api_methods import API_Methods
 from dotenv import load_dotenv
-from urllib.parse import quote_plus
 
 load_dotenv()
 
