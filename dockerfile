@@ -1,5 +1,5 @@
 # ========== Comando para crear y levantar docker
-# clear; docker build -t cumbres-api .; docker run -p 502:502 cumbres-api
+# clear; docker build -t permont-api .; docker run -d --name PermontAPI -p 502:502 permont-api
 # ========== 
 
 # Usa una imagen base de Python 3.11
