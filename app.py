@@ -18,8 +18,8 @@ api = Api(app)
 from Scripts.Asistente_Virtual.chat    import ChatbotResponse
 from Scripts.Asistente_Virtual.configs import ObtenerConfigs
 
-api.add_resource(ChatbotResponse, "/api/a/chat")
-api.add_resource(ObtenerConfigs,  "/api/a/configs")
+api.add_resource(ChatbotResponse, "/a/chat")
+api.add_resource(ObtenerConfigs,  "/a/configs")
 
 
 
@@ -28,8 +28,8 @@ api.add_resource(ObtenerConfigs,  "/api/a/configs")
 from Scripts.Business_Intelligence.registrospubli import PublicacionesAPI
 from Scripts.Business_Intelligence.registrosaudi  import AudienciaAPI
 
-api.add_resource(PublicacionesAPI, '/api/b/publicaciones')
-api.add_resource(AudienciaAPI,     '/api/b/audiencia')
+api.add_resource(PublicacionesAPI, '/b/publicaciones')
+api.add_resource(AudienciaAPI,     '/b/audiencia')
 
 
 
@@ -38,8 +38,8 @@ api.add_resource(AudienciaAPI,     '/api/b/audiencia')
 from Scripts.Desarrollo_Web.general import ObtenerConfigsGeneral
 from Scripts.Desarrollo_Web.proyectos    import ObtenerConfigsProyectos
 
-api.add_resource(ObtenerConfigsGeneral, '/api/w/general')
-api.add_resource(ObtenerConfigsProyectos, '/api/w/proyectos')
+api.add_resource(ObtenerConfigsGeneral, '/w/general')
+api.add_resource(ObtenerConfigsProyectos, '/w/proyectos')
 
 
 if __name__ == '__main__':
