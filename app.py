@@ -11,7 +11,7 @@ sys.stdout = sys.stderr
 # ===== Configuracion API
 app = Flask(__name__)
 CORS(app)
-api = Api(app)
+api = Api(app,prefix='/api')
 
 
 # ===== Endpoints Asistente Virtual
