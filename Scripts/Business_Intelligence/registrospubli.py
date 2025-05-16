@@ -54,7 +54,7 @@ class Publicaciones(Resource):
 
         try:
             # Construir endpoint para la solicitud
-            endpoint = "/business/registers"
+            endpoint = "/api-db/business/registers"
             
             # Obtener parámetros de la solicitud
             params = {}
@@ -193,7 +193,7 @@ class Publicaciones(Resource):
                 return {"status": "error", "message": "'condiciones' es un parámetro obligatorio"}, 400
 
             # Configurar el endpoint
-            endpoint = "/business/registers"
+            endpoint = "/api-db/business/registers"
 
             # Enviar solicitud DELETE a la API con los datos (nombre_tabla y condiciones)
             response, data_response = self.api.DELETE(endpoint=endpoint, data=body_data)

@@ -18,7 +18,7 @@
     <div id="response"></div>
 
     <script>
-        const API_BASE_URL = 'url base de datosss';
+        const API_BASE_URL = 'https://permont.open-door.com.mx';
         const responseDiv = document.getElementById('response');
 
         // --- POST ---
@@ -88,7 +88,7 @@
                     "registros": registrosNormalizados  // Enviar registros
                 };
 
-                fetch(`${API_BASE_URL}/business/registers`, {
+                fetch(`${API_BASE_URL}/api-db/business/registers`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dataToSend)

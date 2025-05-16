@@ -34,7 +34,7 @@ class Audiencia(Resource):
         - JSON con los datos de audiencia
         """
         try:
-            endpoint = "/business/registers"
+            endpoint = "/api-db/business/registers"
             params = {key: request.args.get(key) for key in request.args}
             params.setdefault('nombre_tabla', 'audiencia')
 
@@ -127,7 +127,7 @@ class Audiencia(Resource):
             if not body_data.get('condiciones'):
                 return {"status": "error", "message": "'condiciones' es un parámetro obligatorio"}, 400
 
-            endpoint = "/business/registers"
+            endpoint = "/api-db/business/registers"
             response, data_response = self.api.DELETE(endpoint=endpoint, data=body_data)
 
             if response == "Failure to delete":

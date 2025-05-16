@@ -18,7 +18,7 @@
     <div id="response"></div>
 
     <script>
-        const API_BASE_URL = 'https://cedrus-database.onrender.com'; // Cambia esto con la URL de tu API
+        const API_BASE_URL = 'https://permont.open-door.com.mx'; // Cambia esto con la URL de tu API
         const responseDiv = document.getElementById('response');
 
         // --- POST --- 
@@ -61,7 +61,7 @@
                     "registros": registrosNormalizados  // Enviar registros
                 };
 
-                fetch(`${API_BASE_URL}/business/registers`, {
+                fetch(`${API_BASE_URL}/api-db/business/registers`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dataToSend)
